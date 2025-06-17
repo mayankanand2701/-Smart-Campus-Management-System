@@ -97,4 +97,12 @@ public class InputValidator {
             }
         }
     }
+    public static String getDesignation() {
+        while (true) {
+            System.out.print("Designation: ");
+            String designation = sc.nextLine();
+            if (designation.matches("^[a-zA-Z ]+$")) return designation;
+            System.out.println("❌ Designation must contain only letters and spaces.");
+        }
+    }
 }
