@@ -2,7 +2,13 @@ package campus;
 import validator.InputValidator;
 
 import java.sql.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Management {
 
@@ -182,7 +188,8 @@ public class Management {
             System.out.println("2. View Faculty");
             System.out.println("3. Update Faculty");
             System.out.println("4. Delete Faculty");
-            System.out.println("5. Back");
+            System.out.println("5. Schedule Faculty");
+            System.out.println("6. Back");
             int ch = InputValidator.getInt("Enter your choice: ");
 
             try {
@@ -220,70 +227,22 @@ public class Management {
                         break;
 
                     case 3:
-                        System.out.println("\n✏️ Update Faculty Details");
-
+                        System.out.println("\n✏️ Update Faculty Email");
                         int fid = InputValidator.getInt("Faculty ID to Update: ");
+                        String newEmail = InputValidator.getEmail();
 
-                        // Check if faculty exists
-                        PreparedStatement check = con.prepareStatement("SELECT * FROM faculty WHERE faculty_id = ?");
-                        check.setInt(1, fid);
-                        ResultSet rsFac = check.executeQuery();
+                        PreparedStatement update = con.prepareStatement(
+                            "UPDATE faculty SET email=? WHERE faculty_id=?"
+                        );
+                        update.setString(1, newEmail);
+                        update.setInt(2, fid);
+                        int updatedRows = update.executeUpdate();
 
-                        if (!rsFac.next()) {
-                            System.out.println("❌ No faculty found with that ID.");
-                            break;
-                        }
-
-                        while (true) {
-                            System.out.println("\n🔧 Choose field to update:");
-                            System.out.println("1. Name");
-                            System.out.println("2. Email");
-                            System.out.println("3. Department");
-                            System.out.println("4. Designation");
-                            System.out.println("5. Done");
-                            int choice = InputValidator.getInt("Your choice: ");
-
-                            String query = "";
-                            PreparedStatement ps1 = null;
-
-                            switch (choice) {
-                                case 1:
-                                    query = "UPDATE faculty SET name=? WHERE faculty_id=?";
-                                    ps1 = con.prepareStatement(query);
-                                    ps1.setString(1, InputValidator.getName());
-                                    break;
-                                case 2:
-                                    query = "UPDATE faculty SET email=? WHERE faculty_id=?";
-                                    ps1 = con.prepareStatement(query);
-                                    ps1.setString(1, InputValidator.getEmail());
-                                    break;
-                                case 3:
-                                    query = "UPDATE faculty SET department=? WHERE faculty_id=?";
-                                    ps1 = con.prepareStatement(query);
-                                    ps1.setString(1, InputValidator.getDepartment());
-                                    break;
-                                case 4:
-                                    query = "UPDATE faculty SET designation=? WHERE faculty_id=?";
-                                    ps1 = con.prepareStatement(query);
-                                    ps1.setString(1, InputValidator.getDesignation());
-                                    break;
-                                case 5:
-                                    System.out.println("✅ Finished updating faculty.");
-                                    return;
-                                default:
-                                    System.out.println("❌ Invalid choice. Try again.");
-                                    continue;
-                            }
-
-                            // Set faculty_id in second parameter
-                            ps1.setInt(2, fid);
-                            int updated = ps1.executeUpdate();
-                            if (updated > 0)
-                                System.out.println("✅ Field updated successfully!");
-                            else
-                                System.out.println("❌ Update failed. Please try again.");
-                        }
-
+                        if (updatedRows > 0)
+                            System.out.println("✅ Faculty Updated!");
+                        else
+                            System.out.println("❌ No faculty found with the given ID.");
+                        break;
 
                     case 4:
                         System.out.println("\n🗑️ Delete Faculty");
@@ -297,8 +256,194 @@ public class Management {
                         else
                             System.out.println("❌ No faculty found with the given ID.");
                         break;
-
+                        
+                        
+                    // I HAVE ADDED A NEW CASE - THIS IS FOR TIMETABLE     
                     case 5:
+                        System.out.println("\n📅 Faculty Timetable:");
+                        displayWeeklyTimetableFormatted(con); // Show timetable
+
+                        while (true) {
+                            System.out.print("\nDo you want to add a new schedule? (yes/no): ");
+                            String response = sc.nextLine().trim().toLowerCase();
+
+                            if (response.equals("no")) break;
+                            if (!response.equals("yes")) {
+                                System.out.println("⚠️ Please enter 'yes' or 'no'.");
+                                continue;
+                            }
+
+                            int facultyId;
+                            String facultyDept = "";
+                            String facultyName = "";
+
+                            // 🔁 Ask for valid Faculty ID
+                            while (true) {
+                                System.out.print("Enter Faculty ID: ");
+                                try {
+                                    facultyId = Integer.parseInt(sc.nextLine());
+
+                                    String getFaculty = "SELECT department, name FROM faculty WHERE faculty_id = ?";
+                                    try (PreparedStatement checkFaculty = con.prepareStatement(getFaculty)) {
+                                        checkFaculty.setInt(1, facultyId);
+                                        ResultSet facultyResult = checkFaculty.executeQuery();
+
+                                        if (facultyResult.next()) {
+                                            facultyDept = facultyResult.getString("department");
+                                            facultyName = facultyResult.getString("name");
+                                            System.out.println("✅ Faculty Found: " + facultyName + " (" + facultyDept + ")");
+                                            break;
+                                        } else {
+                                            System.out.println("❌ Invalid Faculty ID. Try again.");
+                                        }
+                                    }
+                                } catch (NumberFormatException e) {
+                                    System.out.println("⚠️ Please enter a valid number.");
+                                }
+                            }
+
+                            // 📚 Show and validate course selection from same department
+                            int courseId;
+                            Set<Integer> validCourses = new HashSet<>();
+
+                            String getCourses = "SELECT course_id, course_name FROM course WHERE department = ?";
+                            try (PreparedStatement courseStmt = con.prepareStatement(getCourses)) {
+                                courseStmt.setString(1, facultyDept);
+                                ResultSet courseResult = courseStmt.executeQuery();
+
+                                System.out.println("\n📚 Available Courses in " + facultyDept + ":");
+                                while (courseResult.next()) {
+                                    int cid = courseResult.getInt("course_id");
+                                    validCourses.add(cid);
+                                    System.out.println("Course ID: " + cid + " - " + courseResult.getString("course_name"));
+                                }
+                            }
+
+                            while (true) {
+                                System.out.print("Enter Course ID to schedule: ");
+                                try {
+                                    courseId = Integer.parseInt(sc.nextLine());
+                                    if (validCourses.contains(courseId)) {
+                                        break;
+                                    } else {
+                                        System.out.println("❌ Invalid Course ID for this department. Try again.");
+                                    }
+                                } catch (NumberFormatException e) {
+                                    System.out.println("⚠️ Please enter a valid number.");
+                                }
+                            }
+
+                            // 🕒 Time Slots
+                            String[] timeSlots = {
+                                "09:00:00 - 10:00:00",
+                                "10:00:00 - 11:00:00",
+                                "11:00:00 - 12:00:00",
+                                "12:00:00 - 13:00:00",
+                                "13:00:00 - 14:00:00",
+                                "14:00:00 - 15:00:00",
+                                "15:00:00 - 16:00:00",
+                                "16:00:00 - 17:00:00"
+                            };
+
+                         // ✅ Validate Day Input
+                            String day = "";
+                            List<String> validDays = Arrays.asList("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+
+                            while (true) {
+                                System.out.print("Enter Day (e.g., Monday): ");
+                                day = sc.nextLine().trim();
+                                String formattedDay = day.substring(0, 1).toUpperCase() + day.substring(1).toLowerCase();
+                                if (validDays.contains(formattedDay)) {
+                                    day = formattedDay;
+                                    break;
+                                } else {
+                                    System.out.println("❌ Invalid day. Please enter a valid weekday (Monday to Friday).");
+                                }
+                            }
+
+
+                            System.out.println("\n🕒 Available Time Slots:");
+                            for (int i = 0; i < timeSlots.length; i++) {
+                                System.out.println((i + 1) + ". " + timeSlots[i]);
+                            }
+
+                            System.out.print("Select time slot number (1–8): ");
+                            int slotIndex = Integer.parseInt(sc.nextLine()) - 1;
+                            if (slotIndex < 0 || slotIndex >= timeSlots.length) {
+                                System.out.println("❌ Invalid time slot selection.");
+                                break;
+                            }
+
+                            String[] slotParts = timeSlots[slotIndex].split(" - ");
+                            String startTime = slotParts[0];
+                            String endTime = slotParts[1];
+
+                            // Check for slot conflict
+                            String checkSlot = "SELECT * FROM Timetable WHERE day_of_week = ? AND start_time = ? AND end_time = ?";
+                            try (PreparedStatement slotStmt = con.prepareStatement(checkSlot)) {
+                                slotStmt.setString(1, day);
+                                slotStmt.setString(2, startTime);
+                                slotStmt.setString(3, endTime);
+                                ResultSet slotResult = slotStmt.executeQuery();
+
+                                if (slotResult.next()) {
+                                    System.out.println("❌ This slot is already occupied. Please try another.");
+                                    continue;
+                                }
+                            }
+
+                            // Room number
+                  
+                            System.out.print("Enter Room Number (e.g., CSE101): ");
+                            String roomNo = sc.nextLine().trim();
+
+                            // Check if the room is already booked on the same day and overlapping time
+                            String roomCheckQuery = "SELECT f.name, t.start_time, t.end_time FROM Timetable t " +
+                                                    "JOIN faculty f ON t.faculty_id = f.faculty_id " +
+                                                    "WHERE t.room_no = ? AND t.day_of_week = ? " +
+                                                    "AND NOT (t.end_time <= ? OR t.start_time >= ?)";
+                            try (PreparedStatement roomStmt = con.prepareStatement(roomCheckQuery)) {
+                                roomStmt.setString(1, roomNo);
+                                roomStmt.setString(2, day);
+                                roomStmt.setTime(3, Time.valueOf(startTime));
+                                roomStmt.setTime(4, Time.valueOf(endTime));
+                                ResultSet roomResult = roomStmt.executeQuery();
+                                if (roomResult.next()) {
+                                    String occupyingFaculty = roomResult.getString("name");
+                                    String occupiedFrom = roomResult.getString("start_time").substring(0,5);
+                                    String occupiedTo = roomResult.getString("end_time").substring(0,5);
+                                    System.out.println("❌ This room is already occupied by " + occupyingFaculty + 
+                                                       " from " + occupiedFrom + " to " + occupiedTo + " on " + day + ". Please choose another room.");
+                                    continue;
+                                }
+                            }
+
+
+
+                            // ✅ Insert Schedule
+                            String insertTimetable = "INSERT INTO Timetable (course_id, faculty_id, day_of_week, start_time, end_time, room_no) VALUES (?, ?, ?, ?, ?, ?)";
+                            try (PreparedStatement insertStmt = con.prepareStatement(insertTimetable)) {
+                                insertStmt.setInt(1, courseId);
+                                insertStmt.setInt(2, facultyId);
+                                insertStmt.setString(3, day);
+                                insertStmt.setString(4, startTime);
+                                insertStmt.setString(5, endTime);
+                                insertStmt.setString(6, roomNo);
+
+                                int rowsInserted = insertStmt.executeUpdate();
+                                if (rowsInserted > 0) {
+                                    System.out.println("✅ Schedule added successfully!");
+                                    System.out.println("\n📋 Updated Schedule for " + facultyName + ":");
+                                    printFacultySchedule(con, facultyId);
+                                } else {
+                                    System.out.println("❌ Failed to insert schedule.");
+                                }
+                            }
+                        }
+                        break;
+
+
+                    case 6:
                         System.out.println("🔙 Returning to main menu...");
                         return;
 
@@ -311,6 +456,127 @@ public class Management {
             }
         }
     }
+
+
+    //BELOW ARE THE 2 FUNCTIONS FOR PRINTING THE TIMETABLE FOR FACULTY 
+    private void printFacultySchedule(Connection con, int facultyId) throws SQLException {
+        String query = "SELECT day_of_week, start_time, end_time, course_id, room_no FROM Timetable WHERE faculty_id = ? ORDER BY FIELD(day_of_week, 'Monday','Tuesday','Wednesday','Thursday','Friday'), start_time";
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setInt(1, facultyId);
+            ResultSet rs = stmt.executeQuery();
+            System.out.printf("%-10s | %-10s - %-10s | %-10s | %-8s%n", "Day", "Start", "End", "Course ID", "Room");
+            System.out.println("-------------------------------------------------------------");
+            while (rs.next()) {
+                System.out.printf("%-10s | %-10s - %-10s | %-10d | %-8s%n",
+                    rs.getString("day_of_week"),
+                    rs.getString("start_time"),
+                    rs.getString("end_time"),
+                    rs.getInt("course_id"),
+                    rs.getString("room_no"));
+            }
+        }
+    }
+
+    private void displayWeeklyTimetableFormatted(Connection con) throws SQLException {
+    	String[] timeSlots = {
+    		    "09:00 – 10:00",
+    		    "10:00 – 11:00",
+    		    "11:00 – 12:00",
+    		    "12:00 – 13:00",
+    		    "13:00 – 14:00",
+    		    "14:00 – 15:00",
+    		    "15:00 – 16:00",
+    		    "16:00 – 17:00"
+    		};
+        String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" };
+
+        // Create a nested map to store timetable data
+        Map<String, Map<String, String>> timetable = new LinkedHashMap<>();
+        for (String slot : timeSlots) {
+            Map<String, String> dayMap = new LinkedHashMap<>();
+            for (String day : days) {
+                dayMap.put(day, "-");
+            }
+            timetable.put(slot, dayMap);
+        }
+
+        String query = "SELECT t.day_of_week, t.start_time, t.end_time, c.course_name, f.name, t.room_no " +
+                       "FROM Timetable t " +
+                       "JOIN course c ON t.course_id = c.course_id " +
+                       "JOIN faculty f ON t.faculty_id = f.faculty_id";
+
+        try (Statement stmt = con.createStatement(); ResultSet result = stmt.executeQuery(query)) {
+            while (result.next()) {
+                String day = result.getString("day_of_week");
+                String start = result.getString("start_time").substring(0, 5);
+                String end = result.getString("end_time").substring(0, 5);
+                String timeSlot = start + " – " + end;
+                String content = result.getString("course_name") + "\n🧑‍🏫 " + result.getString("name") + "\n📍" + result.getString("room_no");
+
+                if (timetable.containsKey(timeSlot)) {
+                    timetable.get(timeSlot).put(day, content);
+                }
+            }
+        }
+
+        // 🖨️ Print Header
+        System.out.println("\n📅 Smart Campus Weekly Timetable");
+        System.out.printf("%-17s", "Time Slot");
+        for (String day : days) {
+            System.out.printf("| %-27s", day);
+        }
+        System.out.println();
+        System.out.println("=".repeat(170));
+
+        // 🖨️ Print timetable row by row
+        for (String time : timeSlots) {
+            System.out.printf("%-17s", time);
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    // Pad each line to fit 3-line cell
+                    System.out.printf("| %-27s", lines[0]);
+                } else {
+                    System.out.printf("| %-27s", "-");
+                }
+            }
+            System.out.println();
+
+            // Print second line (faculty)
+            System.out.printf("%-17s", "");
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    System.out.printf("| %-27s", lines[1]);
+                } else {
+                    System.out.printf("| %-27s", "");
+                }
+            }
+            System.out.println();
+
+            // Print third line (room)
+            System.out.printf("%-17s", "");
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    System.out.printf("| %-27s", lines[2]);
+                } else {
+                    System.out.printf("| %-27s", "");
+                }
+            }
+            System.out.println();
+
+            // Print separator
+            System.out.println("-".repeat(170));
+        }
+    }
+
 
    
     // Student Done

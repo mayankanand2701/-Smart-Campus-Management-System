@@ -126,6 +126,13 @@ INSERT INTO Timetable VALUES
 
 Select * from Timetable;
 
+UPDATE timetable SET start_time = '09:00:00', end_time = '10:00:00' WHERE timetable_id = 501;
+UPDATE timetable SET start_time = '11:00:00', end_time = '12:00:00' WHERE timetable_id = 502;
+UPDATE timetable SET start_time = '10:00:00', end_time = '11:00:00' WHERE timetable_id = 503;
+UPDATE timetable SET start_time = '13:00:00', end_time = '14:00:00' WHERE timetable_id = 504;
+UPDATE timetable SET start_time = '09:00:00', end_time = '10:00:00' WHERE timetable_id = 505;
+UPDATE timetable SET start_time = '14:00:00', end_time = '15:00:00' WHERE timetable_id = 506;
+
 
 
 
