@@ -9,10 +9,10 @@ import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
+import pojos.StudentPOJO;
+
 public class Student
 {
-	// instance variable
-	// getters
 	
 	// Regular expression patterns for validation
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
@@ -40,10 +40,17 @@ public class Student
                 ResultSet rs = ps.executeQuery();
 
                 if (rs.next()) {
-                    System.out.println("\n🎓 Student Details:");
-                    System.out.println("ID      : " + rs.getInt("student_id"));
-                    System.out.println("Name    : " + rs.getString("name"));
-                    System.out.println("Email   : " + rs.getString("email"));
+                	StudentPOJO student = new StudentPOJO();
+                	student.setStudentId(rs.getInt("student_id"));
+                	student.setName(rs.getString("name"));
+                	student.setEmail(rs.getString("email"));
+                	// other fields can also be set if needed
+
+                	System.out.println("\n🎓 Student Details:");
+                	System.out.println("ID      : " + student.getStudentId());
+                	System.out.println("Name    : " + student.getName());
+                	System.out.println("Email   : " + student.getEmail());
+
 
                     while (true) {
                         System.out.println("\n📘 Choose an option:");
@@ -155,30 +162,33 @@ public class Student
     }
 
     private void updateDetails(Connection con, Scanner sc, int studentId) throws SQLException {
-        System.out.print("Enter updated email: ");
-        String newEmail = sc.nextLine();
+    	StudentPOJO student = new StudentPOJO();
 
-        if (!EMAIL_PATTERN.matcher(newEmail).matches()) {
-            System.out.println("❌ Invalid email format.");
-            return;
-        }
+    	System.out.print("Enter updated email: ");
+    	String newEmail = sc.nextLine();
+    	if (!EMAIL_PATTERN.matcher(newEmail).matches()) {
+    	    System.out.println("❌ Invalid email format.");
+    	    return;
+    	}
+    	student.setEmail(newEmail);
 
-        System.out.print("Enter updated phone: ");
-        String newPhone = sc.nextLine();
+    	System.out.print("Enter updated phone: ");
+    	String newPhone = sc.nextLine();
+    	if (!PHONE_PATTERN.matcher(newPhone).matches()) {
+    	    System.out.println("❌ Invalid phone number. Must be exactly 10 digits.");
+    	    return;
+    	}
+    	student.setPhone(newPhone);
 
-        if (!PHONE_PATTERN.matcher(newPhone).matches()) {
-            System.out.println("❌ Invalid phone number. Must be exactly 10 digits.");
-            return;
-        }
+    	String updateQuery = "UPDATE Student SET email = ?, phone = ? WHERE student_id = ?";
+    	try (PreparedStatement stmt = con.prepareStatement(updateQuery)) {
+    	    stmt.setString(1, student.getEmail());
+    	    stmt.setString(2, student.getPhone());
+    	    stmt.setInt(3, studentId);
+    	    int rows = stmt.executeUpdate();
+    	    System.out.println("✅ Student details updated! Rows affected: " + rows);
+    	}
 
-        String updateQuery = "UPDATE Student SET email = ?, phone = ? WHERE student_id = ?";
-        try (PreparedStatement stmt = con.prepareStatement(updateQuery)) {
-            stmt.setString(1, newEmail);
-            stmt.setString(2, newPhone);
-            stmt.setInt(3, studentId);
-            int rows = stmt.executeUpdate();
-            System.out.println("✅ Student details updated! Rows affected: " + rows);
-        }
     }
 
     private void registerCourse(Connection con, Scanner sc, int studentId) throws SQLException {
@@ -197,35 +207,41 @@ public class Student
         }
     }
 
-	public void addStudent(Connection con, Scanner sc)
-	{
-        try 
-        {
-        	sc.nextLine();
+    public void addStudent(Connection con, Scanner sc) {
+        try {
+            sc.nextLine(); // consume newline
+            StudentPOJO student = new StudentPOJO();
+
             System.out.print("Enter name: ");
-            String name = sc.nextLine();
+            student.setName(sc.nextLine());
+
             System.out.print("Enter email: ");
-            String email = sc.nextLine();
+            student.setEmail(sc.nextLine());
+
             System.out.print("Enter phone: ");
-            String phone = sc.nextLine();
+            student.setPhone(sc.nextLine());
+
             System.out.print("Enter DOB (YYYY-MM-DD): ");
-            String dob = sc.nextLine();
+            student.setDob(Date.valueOf(sc.nextLine()));
+
             System.out.print("Enter gender: ");
-            String gender = sc.nextLine();
+            student.setGender(sc.nextLine());
+
             System.out.print("Enter department: ");
-            String dept = sc.nextLine();
+            student.setDepartment(sc.nextLine());
+
             System.out.print("Enter year of study: ");
-            int year = Integer.parseInt(sc.nextLine());
+            student.setYearOfStudy(Integer.parseInt(sc.nextLine()));
 
             String insert = "INSERT INTO student (name, email, phone, dob, gender, department, year_of_study) VALUES (?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement pst = con.prepareStatement(insert)) {
-                pst.setString(1, name);
-                pst.setString(2, email);
-                pst.setString(3, phone);
-                pst.setDate(4, Date.valueOf(dob));
-                pst.setString(5, gender);
-                pst.setString(6, dept);
-                pst.setInt(7, year);
+                pst.setString(1, student.getName());
+                pst.setString(2, student.getEmail());
+                pst.setString(3, student.getPhone());
+                pst.setDate(4, student.getDob());
+                pst.setString(5, student.getGender());
+                pst.setString(6, student.getDepartment());
+                pst.setInt(7, student.getYearOfStudy());
 
                 int rows = pst.executeUpdate();
                 System.out.println("✅ Student added! Rows affected: " + rows);
@@ -235,7 +251,7 @@ public class Student
             e.printStackTrace();
         }
     }
-	
+
 	 public void viewEnrolledCourses(Connection con, int studentId) {
 	        String courseQuery = "SELECT c.course_id, c.course_name, c.credits, c.department, c.semester " +
 	                             "FROM Enrollment e " +

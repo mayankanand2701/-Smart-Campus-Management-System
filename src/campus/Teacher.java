@@ -7,10 +7,11 @@ import java.util.Scanner;
 
 import exception.FacultyNotFoundException;
 import exception.InvalidEmailFormatException;
+import pojos.TeacherPOJO;
 
 public class Teacher 
 {
-
+	 private TeacherPOJO teacherPOJO = new TeacherPOJO();
     public void viewCoursesTeaching(Connection con, int facultyId) {
         String query = "SELECT course_id, course_name FROM Course WHERE faculty_id = ?";
         try (PreparedStatement ps = con.prepareStatement(query)) {
@@ -172,40 +173,44 @@ public class Teacher
         }
     }
 
-public void manageFaculty(Connection con, Scanner sc) {
+    public void manageFaculty(Connection con, Scanner sc) {
         try {
             int facultyId;
             while (true) {
                 System.out.print("Enter your Faculty ID: ");
                 if (!sc.hasNextInt()) {
                     System.out.println("❌ Invalid input! Please enter a number for the Faculty ID.");
-                    sc.next(); // clear invalid input
-                    continue;  // retry input
+                    sc.next();
+                    continue;
                 }
                 facultyId = sc.nextInt();
-                break;  // valid input, exit loop
+                break;
             }
 
-            // ✅ Check if faculty exists
             String checkQuery = "SELECT * FROM Faculty WHERE faculty_id = ?";
             try (PreparedStatement checkStmt = con.prepareStatement(checkQuery)) {
                 checkStmt.setInt(1, facultyId);
                 ResultSet rs = checkStmt.executeQuery();
 
                 if (!rs.next()) {
-                    throw new FacultyNotFoundException("❌ Faculty ID not found. Please contact admin or try again.");
+                    throw new FacultyNotFoundException("❌ Faculty ID not found.");
                 } else {
-                    // ✅ Faculty found → print details
+                    // Set teacher data to POJO
+                    teacherPOJO.setFacultyId(rs.getInt("faculty_id"));
+                    teacherPOJO.setName(rs.getString("name"));
+                    teacherPOJO.setEmail(rs.getString("email"));
+                    teacherPOJO.setDepartment(rs.getString("department"));
+                    teacherPOJO.setDesignation(rs.getString("designation"));
+
                     System.out.println("\n👨‍🏫 Faculty Details:");
-                    System.out.println("ID           : " + rs.getInt("faculty_id"));
-                    System.out.println("Name         : " + rs.getString("name"));
-                    System.out.println("Email        : " + rs.getString("email"));
-                    System.out.println("Department   : " + rs.getString("department"));
-                    System.out.println("Designation  : " + rs.getString("designation"));
+                    System.out.println("ID           : " + teacherPOJO.getFacultyId());
+                    System.out.println("Name         : " + teacherPOJO.getName());
+                    System.out.println("Email        : " + teacherPOJO.getEmail());
+                    System.out.println("Department   : " + teacherPOJO.getDepartment());
+                    System.out.println("Designation  : " + teacherPOJO.getDesignation());
                 }
             }
 
-            // ✅ Faculty exists → proceed to menu
             boolean exit = false;
             while (!exit) {
                 System.out.println("\n👨‍🏫 Faculty Menu:");
@@ -218,19 +223,24 @@ public void manageFaculty(Connection con, Scanner sc) {
 
                 System.out.print("Choose an option: ");
                 if (!sc.hasNextInt()) {
-                    System.out.println("❌ Invalid input! Please enter a number for the option.");
-                    sc.next(); // clear invalid input
+                    System.out.println("❌ Invalid input! Please enter a number.");
+                    sc.next();
                     continue;
                 }
 
                 int option = sc.nextInt();
+                int facultyIdFromPOJO = teacherPOJO.getFacultyId();
 
                 switch (option) {
-                    case 1 -> viewCoursesTeaching(con, facultyId);
-                    case 2 -> viewUniqueStudentsTaught(con, facultyId);
-                    case 3 -> viewTimetable(con, facultyId);
-                    case 4 -> editFacultyDetails(con, sc, facultyId);
-                    case 5 -> viewStudentCountByYear(con, facultyId);
+                    case 1 -> viewCoursesTeaching(con, facultyIdFromPOJO);
+                    case 2 -> viewUniqueStudentsTaught(con, facultyIdFromPOJO);
+                    case 3 -> viewTimetable(con, facultyIdFromPOJO);
+                    case 4 -> {
+                        editFacultyDetails(con, sc, facultyIdFromPOJO);
+                        teacherPOJO.setEmail(teacherPOJO.getEmail());
+                        teacherPOJO.setDesignation(teacherPOJO.getDesignation());
+                    }
+                    case 5 -> viewStudentCountByYear(con, facultyIdFromPOJO);
                     case 6 -> exit = true;
                     default -> System.out.println("❌ Invalid option! Try again.");
                 }
@@ -240,8 +250,6 @@ public void manageFaculty(Connection con, Scanner sc) {
             System.out.println(e.getMessage());
         } catch (SQLException e) {
             System.out.println("❌ Database Error: " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("❌ Error: " + e.getMessage());
         }
     }
 }
