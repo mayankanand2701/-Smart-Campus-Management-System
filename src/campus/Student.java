@@ -44,12 +44,22 @@ public class Student
                 	student.setStudentId(rs.getInt("student_id"));
                 	student.setName(rs.getString("name"));
                 	student.setEmail(rs.getString("email"));
-                	// other fields can also be set if needed
+                	student.setPhone(rs.getString("phone"));
+                	student.setDob(rs.getDate("dob"));
+                	student.setGender(rs.getString("gender"));
+                	student.setDepartment(rs.getString("department"));
+                	student.setYearOfStudy(rs.getInt("year_of_study"));
+                	
 
                 	System.out.println("\n🎓 Student Details:");
                 	System.out.println("ID      : " + student.getStudentId());
                 	System.out.println("Name    : " + student.getName());
                 	System.out.println("Email   : " + student.getEmail());
+                	System.out.println("Phone Number   : " + student.getPhone());
+                	System.out.println("DOB   : " + student.getDob());
+                	System.out.println("Gender   : " + student.getGender());
+                	System.out.println("Department   : " + student.getDepartment());
+                	System.out.println("Year of Study   : " + student.getYearOfStudy());
 
 
                     while (true) {
@@ -265,7 +275,8 @@ public class Student
 	            boolean found = false;
 	            while (crs.next()) {
 	                found = true;
-	                System.out.println("- " + crs.getString("course_name") +
+	                System.out.println("Course ID: " + crs.getInt("course_id") +
+	                		           " | Course Name: " + crs.getString("course_name") +
 	                                   " | Dept: " + crs.getString("department") +
 	                                   " | Credits: " + crs.getInt("credits") +
 	                                   " | Semester: " + crs.getInt("semester"));

@@ -50,9 +50,9 @@ public class Management {
                 switch (ch) {
                     case 1:
                         String cname = InputValidator.getName(); // Course name
-                        int credits = InputValidator.getInt("Credits: ");
+                        int credits = InputValidator.getCredits("Credits: ");
                         String dept = InputValidator.getDepartment();
-                        int semester = InputValidator.getInt("Semester: ");
+                        int semester = InputValidator.getSemester("Semester: ");
                         int facultyId = InputValidator.getInt("Faculty ID: ");
 
                         PreparedStatement ps = con.prepareStatement(
@@ -81,17 +81,76 @@ public class Management {
                         break;
 
                     case 3:
-                        int cid = InputValidator.getInt("Course ID to update: ");
-                        String newCname = InputValidator.getName();
-                        int newCredits = InputValidator.getInt("New Credits: ");
+                        System.out.println("\n✏️ Update Course Details");
 
-                        PreparedStatement update = con.prepareStatement("UPDATE Course SET course_name=?, credits=? WHERE course_id=?");
-                        update.setString(1, newCname);
-                        update.setInt(2, newCredits);
-                        update.setInt(3, cid);
-                        update.executeUpdate();
-                        System.out.println("✅ Course updated successfully.");
-                        break;
+                        int cid = InputValidator.getInt("Course ID to update: ");
+
+                        // Check if course exists
+                        PreparedStatement check = con.prepareStatement("SELECT * FROM Course WHERE course_id = ?");
+                        check.setInt(1, cid);
+                        ResultSet rsCourse = check.executeQuery();
+
+                        if (!rsCourse.next()) {
+                            System.out.println("❌ No course found with that ID.");
+                            break;
+                        }
+
+                        while (true) {
+                            System.out.println("\n🔧 Choose field to update:");
+                            System.out.println("1. Course Name");
+                            System.out.println("2. Credits");
+                            System.out.println("3. Department");
+                            System.out.println("4. Semester");
+                            System.out.println("5. Faculty ID");
+                            System.out.println("6. Done");
+                            int choice = InputValidator.getInt("Your choice: ");
+
+                            String query = "";
+                            PreparedStatement ps1 = null;
+
+                            switch (choice) {
+                                case 1:
+                                    query = "UPDATE Course SET course_name=? WHERE course_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getName());
+                                    break;
+                                case 2:
+                                    query = "UPDATE Course SET credits=? WHERE course_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setInt(1, InputValidator.getCredits("New Credits (1–10): "));
+                                    break;
+                                case 3:
+                                    query = "UPDATE Course SET department=? WHERE course_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getDepartment());
+                                    break;
+                                case 4:
+                                    query = "UPDATE Course SET semester=? WHERE course_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setInt(1, InputValidator.getSemester("New Semester (1–8): "));
+                                    break;
+                                case 5:
+                                    query = "UPDATE Course SET faculty_id=? WHERE course_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setInt(1, InputValidator.getInt("New Faculty ID: "));
+                                    break;
+                                case 6:
+                                    System.out.println("✅ Finished updating course.");
+                                    return;
+                                default:
+                                    System.out.println("❌ Invalid choice. Try again.");
+                                    continue;
+                            }
+
+                            // Common step: Set course_id in all prepared statements
+                            ps1.setInt(2, cid);
+                            int updated = ps1.executeUpdate();
+                            if (updated > 0)
+                                System.out.println("✅ Field updated successfully!");
+                            else
+                                System.out.println("❌ Update failed. Please try again.");
+                        }
+
 
                     case 4:
                         int delId = InputValidator.getInt("Course ID to delete: ");
@@ -161,22 +220,70 @@ public class Management {
                         break;
 
                     case 3:
-                        System.out.println("\n✏️ Update Faculty Email");
+                        System.out.println("\n✏️ Update Faculty Details");
+
                         int fid = InputValidator.getInt("Faculty ID to Update: ");
-                        String newEmail = InputValidator.getEmail();
 
-                        PreparedStatement update = con.prepareStatement(
-                            "UPDATE faculty SET email=? WHERE faculty_id=?"
-                        );
-                        update.setString(1, newEmail);
-                        update.setInt(2, fid);
-                        int updatedRows = update.executeUpdate();
+                        // Check if faculty exists
+                        PreparedStatement check = con.prepareStatement("SELECT * FROM faculty WHERE faculty_id = ?");
+                        check.setInt(1, fid);
+                        ResultSet rsFac = check.executeQuery();
 
-                        if (updatedRows > 0)
-                            System.out.println("✅ Faculty Updated!");
-                        else
-                            System.out.println("❌ No faculty found with the given ID.");
-                        break;
+                        if (!rsFac.next()) {
+                            System.out.println("❌ No faculty found with that ID.");
+                            break;
+                        }
+
+                        while (true) {
+                            System.out.println("\n🔧 Choose field to update:");
+                            System.out.println("1. Name");
+                            System.out.println("2. Email");
+                            System.out.println("3. Department");
+                            System.out.println("4. Designation");
+                            System.out.println("5. Done");
+                            int choice = InputValidator.getInt("Your choice: ");
+
+                            String query = "";
+                            PreparedStatement ps1 = null;
+
+                            switch (choice) {
+                                case 1:
+                                    query = "UPDATE faculty SET name=? WHERE faculty_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getName());
+                                    break;
+                                case 2:
+                                    query = "UPDATE faculty SET email=? WHERE faculty_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getEmail());
+                                    break;
+                                case 3:
+                                    query = "UPDATE faculty SET department=? WHERE faculty_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getDepartment());
+                                    break;
+                                case 4:
+                                    query = "UPDATE faculty SET designation=? WHERE faculty_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getDesignation());
+                                    break;
+                                case 5:
+                                    System.out.println("✅ Finished updating faculty.");
+                                    return;
+                                default:
+                                    System.out.println("❌ Invalid choice. Try again.");
+                                    continue;
+                            }
+
+                            // Set faculty_id in second parameter
+                            ps1.setInt(2, fid);
+                            int updated = ps1.executeUpdate();
+                            if (updated > 0)
+                                System.out.println("✅ Field updated successfully!");
+                            else
+                                System.out.println("❌ Update failed. Please try again.");
+                        }
+
 
                     case 4:
                         System.out.println("\n🗑️ Delete Faculty");
@@ -260,15 +367,80 @@ public class Management {
                         break;
 
                     case 3:
-                        int sid = InputValidator.getInt("Student ID to Update: ");
-                        String newEmail = InputValidator.getEmail();
+                        int sid = InputValidator.getInt("Enter Student ID to update: ");
+                        
+                        PreparedStatement check = con.prepareStatement("SELECT * FROM student WHERE student_id = ?");
+                        check.setInt(1, sid);
+                        ResultSet rsCheck = check.executeQuery();
+                        if (!rsCheck.next()) {
+                            System.out.println("❌ Student not found!");
+                            break;
+                        }
 
-                        PreparedStatement update = con.prepareStatement("UPDATE student SET email=? WHERE student_id=?");
-                        update.setString(1, newEmail);
-                        update.setInt(2, sid);
-                        update.executeUpdate();
-                        System.out.println("✅ Student Updated!");
-                        break;
+                        while (true) {
+                            System.out.println("\n🔧 Choose field to update:");
+                            System.out.println("1. Name");
+                            System.out.println("2. Email");
+                            System.out.println("3. Phone");
+                            System.out.println("4. DOB");
+                            System.out.println("5. Gender");
+                            System.out.println("6. Department");
+                            System.out.println("7. Year of Study");
+                            System.out.println("8. Done");
+                            System.out.print("Enter your choice: ");
+                            int choice = InputValidator.getInt("");
+
+                            String query = "";
+                            PreparedStatement ps1 = null;
+
+                            switch (choice) {
+                                case 1:
+                                    query = "UPDATE student SET name=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getName());
+                                    break;
+                                case 2:
+                                    query = "UPDATE student SET email=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getEmail());
+                                    break;
+                                case 3:
+                                    query = "UPDATE student SET phone=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getPhone());
+                                    break;
+                                case 4:
+                                    query = "UPDATE student SET dob=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setDate(1, Date.valueOf(InputValidator.getDOB()));
+                                    break;
+                                case 5:
+                                    query = "UPDATE student SET gender=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getGender());
+                                    break;
+                                case 6:
+                                    query = "UPDATE student SET department=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setString(1, InputValidator.getDepartment());
+                                    break;
+                                case 7:
+                                    query = "UPDATE student SET year_of_study=? WHERE student_id=?";
+                                    ps1 = con.prepareStatement(query);
+                                    ps1.setInt(1, InputValidator.getYearOfStudy());
+                                    break;
+                                case 8:
+                                    System.out.println("✅ Finished updating.");
+                                    return;
+                                default:
+                                    System.out.println("❌ Invalid choice. Try again.");
+                                    continue;
+                            }
+
+                            ps1.setInt(2, sid);
+                            ps1.executeUpdate();
+                            System.out.println("✅ Field updated!");
+                        }
 
                     case 4:
                         int delId = InputValidator.getInt("Student ID to Delete: ");

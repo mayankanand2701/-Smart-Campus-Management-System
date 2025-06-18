@@ -13,7 +13,9 @@ public class InputValidator {
         while (true) {
             System.out.print("Name: ");
             String name = sc.nextLine();
-            if (name.matches("^[a-zA-Z ]+$")) return name;
+            //made change
+            if (name.matches("^[a-zA-Z. ]+$")
+) return name;
             System.out.println("❌ Name must contain only letters and spaces. Try again.");
         }
     }
@@ -101,8 +103,44 @@ public class InputValidator {
         while (true) {
             System.out.print("Designation: ");
             String designation = sc.nextLine();
-            if (designation.matches("^[a-zA-Z ]+$")) return designation;
+            //made change
+            if (designation.matches("^[a-zA-Z .]+$")) return designation;
             System.out.println("❌ Designation must contain only letters and spaces.");
         }
     }
+    //made change
+ // Credits with custom message and range check
+    public static int getCredits(String message) {
+        while (true) {
+            System.out.print(message);
+            try {
+                int credits = Integer.parseInt(sc.nextLine());
+                if (credits >= 1 && credits <= 10) {
+                    return credits;
+                } else {
+                    System.out.println("❌ Credits must be between 1 and 10.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Invalid number. Please enter an integer between 1 and 10.");
+            }
+        }
+    }
+
+    // Semester with custom message and range check
+    public static int getSemester(String message) {
+        while (true) {
+            System.out.print(message);
+            try {
+                int semester = Integer.parseInt(sc.nextLine());
+                if (semester >= 1 && semester <= 8) {
+                    return semester;
+                } else {
+                    System.out.println("❌ Semester must be between 1 and 8.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("❌ Invalid number. Please enter an integer between 1 and 8.");
+            }
+        }
+    }
+
 }
