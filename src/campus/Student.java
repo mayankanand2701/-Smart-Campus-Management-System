@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -18,108 +20,120 @@ public class Student
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10}$");
     
-	public void manageStudents(Connection con, Scanner sc) {
+    public void manageStudents(Connection con, Scanner sc) {
         try {
-            System.out.print("Are you an existing student? (yes/no): ");
-            String response = sc.next().toLowerCase();
+            while (true) {
+                System.out.print("Are you an existing student? (yes/no): ");
+                String response = sc.next().toLowerCase();
 
-            if (response.equals("yes")) {
-            	System.out.print("Enter your Student ID: ");
-            	String studentIdInput = sc.next();
-            	int studentId;
-
-            	if (!studentIdInput.matches("\\d+")) {
-            	    System.out.println("❌ Invalid Student ID. It must be numeric.");
-            	    return;
-            	}
-            	studentId = Integer.parseInt(studentIdInput);
-
-                String query = "SELECT * FROM Student WHERE student_id = ?";
-                PreparedStatement ps = con.prepareStatement(query);
-                ps.setInt(1, studentId);
-                ResultSet rs = ps.executeQuery();
-
-                if (rs.next()) {
-                	StudentPOJO student = new StudentPOJO();
-                	student.setStudentId(rs.getInt("student_id"));
-                	student.setName(rs.getString("name"));
-                	student.setEmail(rs.getString("email"));
-                	student.setPhone(rs.getString("phone"));
-                	student.setDob(rs.getDate("dob"));
-                	student.setGender(rs.getString("gender"));
-                	student.setDepartment(rs.getString("department"));
-                	student.setYearOfStudy(rs.getInt("year_of_study"));
-                	
-
-                	System.out.println("\n🎓 Student Details:");
-                	System.out.println("ID      : " + student.getStudentId());
-                	System.out.println("Name    : " + student.getName());
-                	System.out.println("Email   : " + student.getEmail());
-                	System.out.println("Phone Number   : " + student.getPhone());
-                	System.out.println("DOB   : " + student.getDob());
-                	System.out.println("Gender   : " + student.getGender());
-                	System.out.println("Department   : " + student.getDepartment());
-                	System.out.println("Year of Study   : " + student.getYearOfStudy());
-
-
+                if (response.equals("yes")) {
                     while (true) {
-                        System.out.println("\n📘 Choose an option:");
-                        System.out.println("1. View enrolled courses");
-                        System.out.println("2. View assigned faculty");
-                        System.out.println("3. View timetable");
-                        System.out.println("4. Edit student details");
-                        System.out.println("5. Register to a new course");
-                        System.out.println("6. Exit");
+                        System.out.print("\nEnter your Student ID (or type 'NA' to return to main menu): ");
+                        String studentIdInput = sc.next();
 
-                        System.out.print("Enter your choice: ");
-                        int subChoice = sc.nextInt();
-                        sc.nextLine(); // clear newline
-
-                        switch (subChoice) {
-                            case 1:
-                                viewCourses(con, studentId);
-                                break;
-                            case 2:
-                                viewFaculty(con, studentId);
-                                break;
-                            case 3:
-                                viewTimetable(con, studentId);
-                                break;
-                            case 4:
-                                updateDetails(con, sc, studentId);
-                                break;
-                            case 5:
-                                registerCourse(con, sc, studentId);
-                                break;
-                            case 6:
-                                System.out.println("👋 Exiting student dashboard...");
-                                return;
-                            default:
-                                System.out.println("❗ Invalid option. Try again.");
+                        if (studentIdInput.equalsIgnoreCase("NA")) {
+                            System.out.println("🔙 Returning to main menu...\n");
+                            return;
                         }
+
+                        if (!studentIdInput.matches("\\d+")) {
+                            System.out.println("❌ Invalid Student ID. It must be numeric.\n");
+                            continue; // prompt again
+                        }                  
+
+                        int studentId = Integer.parseInt(studentIdInput);
+
+                        String query = "SELECT * FROM Student WHERE student_id = ?";
+                        PreparedStatement ps = con.prepareStatement(query);
+                        ps.setInt(1, studentId);
+                        ResultSet rs = ps.executeQuery();
+
+                        if (rs.next()) {
+                        	StudentPOJO student = new StudentPOJO();
+                        	student.setStudentId(rs.getInt("student_id"));
+                        	student.setName(rs.getString("name"));
+                        	student.setEmail(rs.getString("email"));
+                        	student.setPhone(rs.getString("phone"));
+                        	student.setDob(rs.getDate("dob"));
+                        	student.setGender(rs.getString("gender"));
+                        	student.setDepartment(rs.getString("department"));
+                        	student.setYearOfStudy(rs.getInt("year_of_study"));
+                        	
+                        	System.out.println("\n🎓 Student Details:");
+                        	System.out.println("ID      : " + student.getStudentId());
+                        	System.out.println("Name    : " + student.getName());
+                        	System.out.println("Email   : " + student.getEmail());
+                        	System.out.println("Phone Number   : " + student.getPhone());
+                        	System.out.println("DOB   : " + student.getDob());
+                        	System.out.println("Gender   : " + student.getGender());
+                        	System.out.println("Department   : " + student.getDepartment());
+                        	System.out.println("Year of Study   : " + student.getYearOfStudy());
+                        	
+                            while (true) {
+                                System.out.println("\n📘 Choose an option:");
+                                System.out.println("1. View enrolled courses");
+                                System.out.println("2. View assigned faculty");
+                                System.out.println("3. View timetable");
+                                System.out.println("4. Edit student details");
+                                System.out.println("5. Register to a new course");
+                                System.out.println("6. Exit");
+
+                                System.out.print("Enter your choice: ");
+                                String choiceInput = sc.next();
+
+                                if (!choiceInput.matches("\\d+")) {
+                                    System.out.println("❗ Invalid input. Please enter a number between 1 and 6.");
+                                    continue;
+                                }
+
+                                int subChoice = Integer.parseInt(choiceInput);
+                                sc.nextLine(); 
+
+                                switch (subChoice) {
+                                    case 1:
+                                        viewCourses(con, studentId);
+                                        break;
+                                    case 2:
+                                        viewFaculty(con, studentId);
+                                        break;
+                                    case 3:
+                                        viewTimetable(con, studentId);
+                                        break;
+                                    case 4:
+                                        updateDetails(con, sc, studentId);
+                                        break;
+                                    case 5:
+                                        registerCourse(con, sc, studentId);
+                                        break;
+                                    case 6:
+                                        System.out.println("👋 Exiting student dashboard...");
+                                        return; // Exit from the method
+                                    default:
+                                        System.out.println("❗ Invalid option. Try again.");
+                                }
+                            }
+                        } else {
+                            System.out.println("❌ Student ID not found. Please try again.");
+                        }
+
+                        rs.close();
+                        ps.close();
                     }
 
+                } else if (response.equals("no")) {
+                    System.out.println("ℹ️ Kindly ask Management to register you as a student.");
+                    return;
                 } else {
-                    System.out.println("❌ Invalid Student ID. Please try again.");
+                    System.out.println("Invalid input! Please type 'yes' or 'no'.");
                 }
-
-                rs.close();
-                ps.close();
-
-            } else if (response.equals("no")) {
-            	// Check this at later 
-                // addStudent(con, sc);
-            	System.out.println("Kindly ask Management to Register you as a Studnet");
-            } else {
-                System.out.println("Invalid input! Please type 'yes' or 'no'.");
             }
 
         } catch (Exception e) {
-            System.out.println("❌ Error occurred : Input valid number between 1 to 6");
-            //e.printStackTrace();
+            System.out.println("❌ Error occurred: " + e.getMessage());
             sc.nextLine(); 
         }
     }
+    
 	private void viewCourses(Connection con, int studentId) throws SQLException {
         String courseQuery = "SELECT c.course_id, c.course_name, c.credits, c.department, c.semester " +
                              "FROM Enrollment e JOIN Course c ON e.course_id = c.course_id " +
@@ -153,21 +167,103 @@ public class Student
         }
     }
     private void viewTimetable(Connection con, int studentId) throws SQLException {
-        String timeQuery = "SELECT t.day_of_week, t.start_time, t.end_time, t.room_no, c.course_name " +
-                           "FROM Timetable t JOIN Course c ON t.course_id = c.course_id " +
-                           "JOIN Enrollment e ON c.course_id = e.course_id " +
-                           "WHERE e.student_id = ?";
-        try (PreparedStatement stmt = con.prepareStatement(timeQuery)) {
-            stmt.setInt(1, studentId);
-            ResultSet rs = stmt.executeQuery();
-            System.out.println("\n🕒 Timetable:");
-            while (rs.next()) {
-                System.out.println("- " + rs.getString("day_of_week") +
-                                   " | " + rs.getString("course_name") +
-                                   " | " + rs.getTime("start_time") +
-                                   " - " + rs.getTime("end_time") +
-                                   " | Room: " + rs.getString("room_no"));
+    	displayStudentTimetableFormatted(con, studentId);
+    }
+
+private void displayStudentTimetableFormatted(Connection con, int studentId) throws SQLException {
+        String[] timeSlots = {
+            "09:00 – 10:00", "10:00 – 11:00", "11:00 – 12:00", "12:00 – 13:00",
+            "13:00 – 14:00", "14:00 – 15:00", "15:00 – 16:00", "16:00 – 17:00"
+        };
+        String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" };
+
+        // Create a nested map to store timetable data
+        Map<String, Map<String, String>> timetable = new LinkedHashMap<>();
+        for (String slot : timeSlots) {
+            Map<String, String> dayMap = new LinkedHashMap<>();
+            for (String day : days) {
+                dayMap.put(day, "-");
             }
+            timetable.put(slot, dayMap);
+        }
+
+        String query = "SELECT t.day_of_week, t.start_time, t.end_time, c.course_name, f.name, t.room_no " +
+                       "FROM timetable t " +
+                       "JOIN course c ON t.course_id = c.course_id " +
+                       "JOIN faculty f ON t.faculty_id = f.faculty_id " +
+                       "JOIN enrollment e ON c.course_id = e.course_id " +
+                       "WHERE e.student_id = ?";
+
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setInt(1, studentId);
+            ResultSet result = stmt.executeQuery();
+            while (result.next()) {
+                String day = result.getString("day_of_week");
+                String start = result.getString("start_time").substring(0, 5);
+                String end = result.getString("end_time").substring(0, 5);
+                String timeSlot = start + " – " + end;
+                String content = result.getString("course_name") + "\n🧑‍🏫 " + result.getString("name") + "\n📍" + result.getString("room_no");
+
+                if (timetable.containsKey(timeSlot)) {
+                    timetable.get(timeSlot).put(day, content);
+                }
+            }
+        }
+
+        // 🖨️ Print Header
+        System.out.println("\n📅 Your Weekly Timetable");
+        System.out.printf("%-17s", "Time Slot");
+        for (String day : days) {
+            System.out.printf("| %-27s", day);
+        }
+        System.out.println();
+        System.out.println("=".repeat(170));
+
+        // 🖨️ Print timetable row by row
+        for (String time : timeSlots) {
+            System.out.printf("%-17s", time);
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    System.out.printf("| %-27s", lines[0]);
+                } else {
+                    System.out.printf("| %-27s", "-");
+                }
+            }
+            System.out.println();
+
+            // Second line (faculty)
+            System.out.printf("%-17s", "");
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    System.out.printf("| %-27s", lines[1]);
+                } else {
+                    System.out.printf("| %-27s", "");
+                }
+            }
+            System.out.println();
+
+            // Third line (room)
+            System.out.printf("%-17s", "");
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 3) {
+                    System.out.printf("| %-27s", lines[2]);
+                } else {
+                    System.out.printf("| %-27s", "");
+                }
+            }
+            System.out.println();
+
+            // Separator
+            System.out.println("-".repeat(170));
         }
     }
 

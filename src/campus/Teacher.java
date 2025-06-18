@@ -2,7 +2,9 @@ package campus;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import exception.FacultyNotFoundException;
@@ -52,25 +54,90 @@ public class Teacher
         }
     }
 
-    public void viewTimetable(Connection con, int facultyId) {
-        String query = "SELECT course_id, day_of_week, start_time, end_time, room_no " +
-                       "FROM Timetable WHERE faculty_id = ?";
-        try (PreparedStatement ps = con.prepareStatement(query)) {
-            ps.setInt(1, facultyId);
-            ResultSet rs = ps.executeQuery();
+    public void viewTimetable(Connection con, int facultyId) throws SQLException {
+        displayFacultyTimetableFormatted(con, facultyId);
+    }
 
-            System.out.println("\n📅 Your Timetable:");
-            while (rs.next()) {
-                System.out.println("Course ID: " + rs.getInt("course_id") +
-                        " | Day: " + rs.getString("day_of_week") +
-                        " | Time: " + rs.getTime("start_time") + " - " + rs.getTime("end_time") +
-                        " | Room: " + rs.getString("room_no"));
+    private void displayFacultyTimetableFormatted(Connection con, int facultyId) throws SQLException {
+        String[] timeSlots = {
+            "09:00 – 10:00", "10:00 – 11:00", "11:00 – 12:00", "12:00 – 13:00",
+            "13:00 – 14:00", "14:00 – 15:00", "15:00 – 16:00", "16:00 – 17:00"
+        };
+        String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" };
+
+        Map<String, Map<String, String>> timetable = new LinkedHashMap<>();
+        for (String slot : timeSlots) {
+            Map<String, String> dayMap = new LinkedHashMap<>();
+            for (String day : days) {
+                dayMap.put(day, "-");
             }
-            rs.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+            timetable.put(slot, dayMap);
+        }
+
+        String query = "SELECT t.day_of_week, t.start_time, t.end_time, c.course_name, t.room_no " +
+                       "FROM timetable t " +
+                       "JOIN course c ON t.course_id = c.course_id " +
+                       "WHERE t.faculty_id = ?";
+
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setInt(1, facultyId);
+            ResultSet result = stmt.executeQuery();
+            while (result.next()) {
+                String day = result.getString("day_of_week");
+                String start = result.getString("start_time").substring(0, 5);
+                String end = result.getString("end_time").substring(0, 5);
+                String timeSlot = start + " – " + end;
+                String content = result.getString("course_name") + "\n📍" + result.getString("room_no");
+
+                if (timetable.containsKey(timeSlot)) {
+                    timetable.get(timeSlot).put(day, content);
+                }
+            }
+        }
+
+        // 🖨️ Print Header
+        System.out.println("\n📅 Faculty Weekly Timetable");
+        System.out.printf("%-17s", "Time Slot");
+        for (String day : days) {
+            System.out.printf("| %-27s", day);
+        }
+        System.out.println();
+        System.out.println("=".repeat(170));
+
+        // 🖨️ Print timetable row by row
+        for (String time : timeSlots) {
+            System.out.printf("%-17s", time);
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 2) {
+                    System.out.printf("| %-27s", lines[0]);
+                } else {
+                    System.out.printf("| %-27s", "-");
+                }
+            }
+            System.out.println();
+
+            // Second line (room)
+            System.out.printf("%-17s", "");
+            for (String day : days) {
+                String val = timetable.get(time).get(day);
+                String[] lines = val.split("\n");
+
+                if (lines.length == 2) {
+                    System.out.printf("| %-27s", lines[1]);
+                } else {
+                    System.out.printf("| %-27s", "");
+                }
+            }
+            System.out.println();
+
+            // Separator
+            System.out.println("-".repeat(170));
         }
     }
+
 
     public void editFacultyDetails(Connection con, Scanner sc, int facultyId) {
         System.out.println("\n📝 Update Faculty Details:");

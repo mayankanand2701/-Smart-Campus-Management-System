@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
+import exception.FacultyNotFoundException;
+
 public class Management {
 
     public void manageAll(Connection con, Scanner sc) {
@@ -54,25 +56,87 @@ public class Management {
 
             try {
                 switch (ch) {
-                    case 1:
-                        String cname = InputValidator.getName(); // Course name
-                        int credits = InputValidator.getCredits("Credits: ");
-                        String dept = InputValidator.getDepartment();
-                        int semester = InputValidator.getSemester("Semester: ");
-                        int facultyId = InputValidator.getInt("Faculty ID: ");
+                case 1:
+                	try {
+                	    String cname = InputValidator.getName(); // Course name
+                	    int credits = InputValidator.getInt("Credits: ");
+                	    String dept = InputValidator.getDepartment();
+                	    int semester = InputValidator.getInt("Semester: ");
 
-                        PreparedStatement ps = con.prepareStatement(
-                                "INSERT INTO Course (course_name, credits, department, semester, faculty_id) VALUES (?, ?, ?, ?, ?)"
-                        );
-                        ps.setString(1, cname);
-                        ps.setInt(2, credits);
-                        ps.setString(3, dept);
-                        ps.setInt(4, semester);
-                        ps.setInt(5, facultyId);
-                        ps.executeUpdate();
+                	    int facultyId;
 
-                        System.out.println("✅ Course added successfully!");
-                        break;
+                	    while (true) {
+                	        // 📌 Display available faculties for the selected department
+                	        System.out.println("\n📚 Available Faculties for Department: " + dept);
+                	        System.out.println("--------------------------------------------------");
+                	        System.out.println("Faculty ID | Faculty Name");
+                	        System.out.println("--------------------------------------------------");
+
+                	        String fetchFacultiesQuery = "SELECT faculty_id, name FROM Faculty WHERE department = ?";
+                	        try (PreparedStatement fetchStmt = con.prepareStatement(fetchFacultiesQuery)) {
+                	            fetchStmt.setString(1, dept);
+                	            ResultSet rs = fetchStmt.executeQuery();
+
+                	            boolean facultyAvailable = false;
+                	            while (rs.next()) {
+                	                facultyAvailable = true;
+                	                System.out.printf("%-11d | %s\n", rs.getInt("faculty_id"), rs.getString("name"));
+                	            }
+
+                	            if (!facultyAvailable) {
+                	                System.out.println("❌ No faculty available for this department.");
+                	                return; // Exit as no faculty available for selected department
+                	            }
+                	        }
+
+                	        System.out.println("--------------------------------------------------");
+
+                	        // 📌 Ask for Faculty ID to assign
+                	        facultyId = InputValidator.getInt("Choose a Faculty ID to assign to the course: ");
+
+                	        String checkFacultyQuery = "SELECT * FROM Faculty WHERE faculty_id = ? AND department = ?";
+                	        try (PreparedStatement checkFacultyStmt = con.prepareStatement(checkFacultyQuery)) {
+                	            checkFacultyStmt.setInt(1, facultyId);
+                	            checkFacultyStmt.setString(2, dept);
+                	            ResultSet rs = checkFacultyStmt.executeQuery();
+
+                	            if (rs.next()) {
+                	                // Faculty found in that department — break the loop
+                	                break;
+                	            } else {
+                	                throw new FacultyNotFoundException("❌ Faculty ID not found in the selected department. Please enter a valid Faculty ID.");
+                	            }
+
+                	        } catch (FacultyNotFoundException e) {
+                	            System.out.println(e.getMessage());
+                	        } catch (SQLException e) {
+                	            e.printStackTrace();
+                	            return; // Stop if SQL error occurs
+                	        }
+                	    }
+
+                	    // 📌 Now safe to insert course
+                	    try (PreparedStatement ps = con.prepareStatement(
+                	            "INSERT INTO Course (course_name, credits, department, semester, faculty_id) VALUES (?, ?, ?, ?, ?)"
+                	    )) {
+                	        ps.setString(1, cname);
+                	        ps.setInt(2, credits);
+                	        ps.setString(3, dept);
+                	        ps.setInt(4, semester);
+                	        ps.setInt(5, facultyId);
+                	        ps.executeUpdate();
+
+                	        System.out.println("✅ Course added successfully!");
+                	    } catch (SQLException e) {
+                	        e.printStackTrace();
+                	    }
+
+                	} catch (Exception e) {
+                	    e.printStackTrace();
+                	}
+
+
+                    break;
 
                     case 2:
                         ResultSet rs = con.createStatement().executeQuery("SELECT * FROM Course");
@@ -107,8 +171,7 @@ public class Management {
                             System.out.println("2. Credits");
                             System.out.println("3. Department");
                             System.out.println("4. Semester");
-                            System.out.println("5. Faculty ID");
-                            System.out.println("6. Done");
+                            System.out.println("5. Done");
                             int choice = InputValidator.getInt("Your choice: ");
 
                             String query = "";
@@ -136,11 +199,6 @@ public class Management {
                                     ps1.setInt(1, InputValidator.getSemester("New Semester (1–8): "));
                                     break;
                                 case 5:
-                                    query = "UPDATE Course SET faculty_id=? WHERE course_id=?";
-                                    ps1 = con.prepareStatement(query);
-                                    ps1.setInt(1, InputValidator.getInt("New Faculty ID: "));
-                                    break;
-                                case 6:
                                     System.out.println("✅ Finished updating course.");
                                     return;
                                 default:
