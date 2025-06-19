@@ -100,8 +100,8 @@ public class Student
                                         viewTimetable(con, studentId);
                                         break;
                                     case 4:
-                                        updateDetails(con, sc, studentId);
-                                        break;
+                                    	updateDetailsMenu(con, sc, studentId);
+                                    	break;
                                     case 5:
                                         registerCourse(con, sc, studentId);
                                         break;
@@ -267,35 +267,305 @@ private void displayStudentTimetableFormatted(Connection con, int studentId) thr
         }
     }
 
-    private void updateDetails(Connection con, Scanner sc, int studentId) throws SQLException {
-    	StudentPOJO student = new StudentPOJO();
+private void updateDetailsMenu(Connection con, Scanner sc, int studentId) throws SQLException {
+    boolean running = true;
 
-    	System.out.print("Enter updated email: ");
-    	String newEmail = sc.nextLine();
-    	if (!EMAIL_PATTERN.matcher(newEmail).matches()) {
-    	    System.out.println("❌ Invalid email format.");
-    	    return;
-    	}
-    	student.setEmail(newEmail);
+    while (running) {
+        System.out.println("\n----- Update Student Details -----");
+        System.out.println("1. Update Name");
+        System.out.println("2. Update Email");
+        System.out.println("3. Update Phone");
+        System.out.println("4. Update DOB");
+        System.out.println("5. Update Gender");
+        System.out.println("6. Update Department");
+        System.out.println("7. Update Year of Study");
+        System.out.println("8. Update All Fields");
+        System.out.println("0. Return to Main Menu");
+        System.out.print("Choose an option: ");
 
-    	System.out.print("Enter updated phone: ");
-    	String newPhone = sc.nextLine();
-    	if (!PHONE_PATTERN.matcher(newPhone).matches()) {
-    	    System.out.println("❌ Invalid phone number. Must be exactly 10 digits.");
-    	    return;
-    	}
-    	student.setPhone(newPhone);
+        String choice = sc.nextLine();
 
-    	String updateQuery = "UPDATE Student SET email = ?, phone = ? WHERE student_id = ?";
-    	try (PreparedStatement stmt = con.prepareStatement(updateQuery)) {
-    	    stmt.setString(1, student.getEmail());
-    	    stmt.setString(2, student.getPhone());
-    	    stmt.setInt(3, studentId);
-    	    int rows = stmt.executeUpdate();
-    	    System.out.println("✅ Student details updated! Rows affected: " + rows);
-    	}
-
+        switch (choice) {
+            case "1":
+                updateField(con, sc, studentId, "name");
+                break;
+            case "2":
+                updateField(con, sc, studentId, "email");
+                break;
+            case "3":
+                updateField(con, sc, studentId, "phone");
+                break;
+            case "4":
+                updateField(con, sc, studentId, "dob");
+                break;
+            case "5":
+                updateField(con, sc, studentId, "gender");
+                break;
+            case "6":
+                updateField(con, sc, studentId, "department");
+                break;
+            case "7":
+                updateField(con, sc, studentId, "year_of_study");
+                break;
+            case "8":
+                updateAllDetails(con, sc, studentId); 
+                break;
+            case "0":
+                System.out.println("🔙 Returning to main menu...");
+                running = false;
+                break;
+            default:
+                System.out.println("❌ Invalid option. Please try again.");
+        }
     }
+}
+private void updateField(Connection con, Scanner sc, int studentId, String field) throws SQLException {
+    String query = "UPDATE Student SET " + field + " = ? WHERE student_id = ?";
+    try (PreparedStatement stmt = con.prepareStatement(query)) {
+        switch (field) {
+            case "name":
+                System.out.print("Enter updated name: ");
+                String name = sc.nextLine().trim();
+                if (name.isEmpty()) {
+                    System.out.println("❌ Name cannot be empty.");
+                    return;
+                }
+                if (!name.matches("^[A-Za-z ]+$")) {
+                    System.out.println("❌ Name must contain only letters and spaces. No digits or special characters allowed.");
+                    return;
+                }
+                stmt.setString(1, name);
+                break;
+
+            case "email":
+                System.out.print("Enter updated email: ");
+                String email = sc.nextLine().trim();
+                if (!EMAIL_PATTERN.matcher(email).matches()) {
+                    System.out.println("❌ Invalid email format.");
+                    return;
+                }
+                stmt.setString(1, email);
+                break;
+
+            case "phone":
+                System.out.print("Enter updated phone (10 digits): ");
+                String phone = sc.nextLine().trim();
+                if (!PHONE_PATTERN.matcher(phone).matches()) {
+                    System.out.println("❌ Invalid phone number.");
+                    return;
+                }
+                stmt.setString(1, phone);
+                break;
+
+            case "dob":
+                System.out.print("Enter updated DOB (yyyy-MM-dd): ");
+                String dobInput = sc.nextLine().trim();
+                try {
+                    java.sql.Date dob = java.sql.Date.valueOf(dobInput);
+                    stmt.setDate(1, dob);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("❌ Invalid date format.");
+                    return;
+                }
+                break;
+
+            case "gender":
+                System.out.print("Enter updated gender (male/female/other): ");
+                String gender = sc.nextLine().trim().toLowerCase();
+                if (!gender.matches("male|female|other")) {
+                    System.out.println("❌ Invalid gender.");
+                    return;
+                }
+                stmt.setString(1, gender);
+                break;
+
+            case "department":
+                System.out.print("Enter updated department: ");
+                String dept = sc.nextLine().trim();
+                if (dept.isEmpty()) {
+                    System.out.println("❌ Department cannot be empty.");
+                    return;
+                }
+                stmt.setString(1, dept);
+                break;
+
+            case "year_of_study":
+                System.out.print("Enter updated year of study (1-5): ");
+                String input = sc.nextLine().trim();
+                try {
+                    int year = Integer.parseInt(input);
+                    if (year < 1 || year > 5) {
+                        System.out.println("❌ Year must be between 1 and 5.");
+                        return;
+                    }
+                    stmt.setInt(1, year);
+                } catch (NumberFormatException e) {
+                    System.out.println("❌ Invalid number.");
+                    return;
+                }
+                break;
+
+            default:
+                System.out.println("❌ Unknown field.");
+                return;
+        }
+
+        stmt.setInt(2, studentId);
+        int rows = stmt.executeUpdate();
+        System.out.println("✅ " + field.replace("_", " ") + " updated successfully. Rows affected: " + rows);
+    }
+}
+
+private void updateAllDetails(Connection con, Scanner sc, int studentId) throws SQLException {
+    StudentPOJO student = new StudentPOJO();
+    System.out.println("***write 'NA' to cancel anytime***");
+    // Name (non-empty)
+    String name;
+    while (true) {
+        System.out.print("Enter updated name: ");
+        name = sc.nextLine().trim();
+        if (name.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        if (!name.matches("^[A-Za-z ]+$")) {
+            System.out.println("❌ Name must contain only letters and spaces. No digits or special characters allowed.");
+            return;
+        }
+        if (name.isEmpty()) {
+            System.out.println("❌ Name cannot be empty.");
+            
+        } else {
+            break;
+        }
+    }
+    student.setName(name);
+
+    // Email (pattern)
+    String newEmail;
+    while (true) {
+        System.out.print("Enter updated email: ");
+        newEmail = sc.nextLine();
+        if (newEmail.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        if (!EMAIL_PATTERN.matcher(newEmail).matches()) {
+            System.out.println("❌ Invalid email format. Please try again.");
+        } else {
+            break;
+        }
+    }
+    student.setEmail(newEmail);
+
+    String newPhone;
+    while (true) {
+        System.out.print("Enter updated phone (10 digits): ");
+        newPhone = sc.nextLine();
+        if (newPhone.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        if (!PHONE_PATTERN.matcher(newPhone).matches()) {
+            System.out.println("❌ Invalid phone number. Must be exactly 10 digits. Please try again.");
+        } else {
+            break;
+        }
+    }
+    student.setPhone(newPhone);
+
+    // Date of Birth (format check)
+    String dob;
+    while (true) {
+        System.out.print("Enter updated DOB (yyyy-MM-dd): ");
+        dob = sc.nextLine().trim();
+        if (dob.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        try {
+            java.sql.Date.valueOf(dob); // Validate format
+            break;
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ Invalid date format. Use yyyy-MM-dd.");
+        }
+    }
+    student.setDob(Date.valueOf(dob));
+
+    // Gender (male/female/other)
+    String gender;
+    while (true) {
+        System.out.print("Enter updated gender (male/female/other): ");
+        gender = sc.nextLine().trim().toLowerCase();
+        if (gender.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        if (!gender.equals("male") && !gender.equals("female") && !gender.equals("other")) {
+            System.out.println("❌ Invalid gender. Please enter male, female, or other.");
+        } else {
+            break;
+        }
+    }
+    student.setGender(gender);
+
+    // Department (non-empty)
+    String department;
+    while (true) {
+        System.out.print("Enter updated department: ");
+        department = sc.nextLine().trim();
+        if (department.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+        if (department.isEmpty()) {
+            System.out.println("❌ Department cannot be empty.");
+        } else {
+            break;
+        }
+    }
+    student.setDepartment(department);
+
+    // Year of study (1–5 range)
+    int year;
+    while (true) {
+        System.out.print("Enter updated year of study (1-5): ");
+        String input = sc.nextLine().trim();
+
+        if (input.equalsIgnoreCase("NA")) {
+            System.out.println("🔙 Returning to main menu...\n");
+            return;
+        }
+
+        try {
+            year = Integer.parseInt(input);
+            if (year < 1 || year > 5) {
+                System.out.println("❌ Year must be between 1 and 5.");
+            } else {
+                break;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("❌ Invalid number. Please enter a valid year.");
+        }
+    }
+    student.setYearOfStudy(year);
+
+    // Update in DB
+    String query = "UPDATE Student SET name = ?, email = ?, phone = ?, dob = ?, gender = ?, department = ?, year_of_study = ? WHERE student_id = ?";
+    try (PreparedStatement stmt = con.prepareStatement(query)) {
+        stmt.setString(1, student.getName());
+        stmt.setString(2, student.getEmail());
+        stmt.setString(3, student.getPhone());
+        stmt.setDate(4, student.getDob());
+        stmt.setString(5, student.getGender());
+        stmt.setString(6, student.getDepartment());
+        stmt.setInt(7, student.getYearOfStudy());
+        stmt.setInt(8, studentId);
+
+        int rows = stmt.executeUpdate();
+        System.out.println("✅ Student details updated successfully. Rows affected: " + rows);
+    }
+}
 
     private void registerCourse(Connection con, Scanner sc, int studentId) throws SQLException {
         System.out.print("Enter Course ID to register: ");
