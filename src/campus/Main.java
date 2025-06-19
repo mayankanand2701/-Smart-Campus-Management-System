@@ -31,13 +31,16 @@ public class Main {
 
                 int choice = -1;
 
-                try {
+                try
+                {
                     System.out.print("Choose an option: ");
                     choice = sc.nextInt();
-                    sc.nextLine(); // clear buffer
-                } catch (InputMismatchException e) {
+                    sc.nextLine(); 
+                } 
+                catch (InputMismatchException e)
+                {
                     System.out.println("Invalid input! Please enter a number between 1 and 4.");
-                    sc.nextLine(); // consume the invalid input
+                    sc.nextLine(); 
                     continue;
                 }
 
@@ -45,25 +48,35 @@ public class Main {
                 Teacher faculty = new Teacher();
                 Management management = new Management();
 
-                switch (choice) {
+                switch (choice) 
+                {
                     case 1:
-                        try {
+                        try 
+                        {
                             student.manageStudents(con, sc);
-                        } catch (Exception e) {
+                        } 
+                        catch (Exception e) 
+                        {
                             System.out.println("Error in Student module: " + e.getMessage());
                         }
                         break;
                     case 2:
-                        try {
+                        try 
+                        {
                             faculty.manageFaculty(con, sc);
-                        } catch (Exception e) {
+                        } 
+                        catch (Exception e) 
+                        {
                             System.out.println("Error in Teacher module: " + e.getMessage());
                         }
                         break;
                     case 3:
-                        try {
+                        try 
+                        {
                             management.manageAll(con, sc);
-                        } catch (Exception e) {
+                        } 
+                        catch (Exception e)
+                        {
                             System.out.println("Error in Management module: " + e.getMessage());
                         }
                         break;
@@ -78,19 +91,32 @@ public class Main {
                 }
             }
 
-        } catch (ClassNotFoundException e) {
+        } 
+        catch (ClassNotFoundException e) 
+        {
             System.out.println("JDBC Driver not found: " + e.getMessage());
-        } catch (SQLException e) {
+        } 
+        catch (SQLException e) 
+        {
             System.out.println("Database connection error: " + e.getMessage());
-        } catch (Exception e) {
+        } 
+        catch (Exception e) 
+        {
             System.out.println("Unexpected error: " + e.getMessage());
-        } finally {
-            try {
-                if (con != null && !con.isClosed()) {
+        } 
+        finally 
+        {
+            
+        	try 
+        	{
+                if (con != null && !con.isClosed())
+                {
                     con.close();
                 }
                 sc.close();
-            } catch (SQLException e) {
+            } 
+        	catch (SQLException e) 
+        	{
                 System.out.println("Error closing resources: " + e.getMessage());
             }
         }

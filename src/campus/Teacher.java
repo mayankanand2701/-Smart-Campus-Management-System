@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 import exception.FacultyNotFoundException;
 import exception.InvalidEmailFormatException;
@@ -13,6 +14,9 @@ import pojos.TeacherPOJO;
 
 public class Teacher 
 {
+	 private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
+	 private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9]{10}$");
+	 
 	 private TeacherPOJO teacherPOJO = new TeacherPOJO();
     public void viewCoursesTeaching(Connection con, int facultyId) {
         String query = "SELECT course_id, course_name FROM Course WHERE faculty_id = ?";
@@ -139,83 +143,188 @@ public class Teacher
     }
 
 
-    public void editFacultyDetails(Connection con, Scanner sc, int facultyId) {
-        System.out.println("\n📝 Update Faculty Details:");
-        sc.nextLine(); // consume leftover newline
 
-        String email;
-        while (true) {
-            try {
-                System.out.print("Enter new email: ");
-                email = sc.nextLine();
-                if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-z]+\\.com$")) {
-                    throw new InvalidEmailFormatException("❌ Invalid email format! Email should be like example@domain.com");
-                }
-                break;
-            } catch (InvalidEmailFormatException e) {
-                System.out.println(e.getMessage());
+public void editFacultyDetailsMenu(Connection con, Scanner sc, int facultyId) throws SQLException {
+        boolean running = true;
+
+        while (running) {
+            System.out.println("\n----- Update Faculty Details -----");
+            System.out.println("1. Update Name");
+            System.out.println("2. Update Email");
+            System.out.println("3. Update Phone");
+            System.out.println("4. Update Department");
+            System.out.println("5. Update Designation");
+            System.out.println("6. Update All Fields");
+            System.out.println("0. Return to Main Menu");
+            System.out.print("Choose an option: ");
+
+            String choice = sc.nextLine().trim();
+
+            switch (choice) {
+                case "1":
+                    updateFacultyField(con, sc, facultyId, "name");
+                    break;
+                case "2":
+                    updateFacultyField(con, sc, facultyId, "email");
+                    break;
+                case "3":
+                    updateFacultyField(con, sc, facultyId, "phone");
+                    break;
+                case "4":
+                    updateFacultyField(con, sc, facultyId, "department");
+                    break;
+                case "5":
+                    updateFacultyField(con, sc, facultyId, "designation");
+                    break;
+                case "6":
+                    updateAllFacultyDetails(con, sc, facultyId);
+                    break;
+                case "0":
+                    System.out.println("🔙 Returning to main menu...");
+                    running = false;
+                    break;
+                default:
+                    System.out.println("❌ Invalid option. Please try again.");
             }
-        }
-
-        // ✅ Fetch and display available designations
-        List<String> designations = new ArrayList<>();
-        String designation = null;
-        try (Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT DISTINCT designation FROM Faculty")) {
-
-            System.out.println("\nAvailable Designations:");
-            int index = 1;
-            while (rs.next()) {
-                String desig = rs.getString("designation");
-                designations.add(desig);
-                System.out.println(index + ". " + desig);
-                index++;
-            }
-
-            if (designations.isEmpty()) {
-                System.out.println("❌ No designations found in the system.");
-                return;
-            }
-
-            // Prompt user to select a designation
-            int choice;
-            while (true) {
-                System.out.print("Select a designation by number: ");
-                if (!sc.hasNextInt()) {
-                    System.out.println("❌ Invalid input. Enter a number.");
-                    sc.next();
-                    continue;
-                }
-                choice = sc.nextInt();
-                if (choice < 1 || choice > designations.size()) {
-                    System.out.println("❌ Invalid choice. Please select a valid option.");
-                    continue;
-                }
-                designation = designations.get(choice - 1);
-                break;
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        // ✅ Update faculty record (only email and designation now)
-        String update = "UPDATE Faculty SET email = ?, designation = ? WHERE faculty_id = ?";
-        try (PreparedStatement ps = con.prepareStatement(update)) {
-            ps.setString(1, email);
-            ps.setString(2, designation);
-            ps.setInt(3, facultyId);
-
-            int rows = ps.executeUpdate();
-            if (rows > 0)
-                System.out.println("✅ Faculty details updated successfully!");
-            else
-                System.out.println("❌ Faculty ID not found.");
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
+    private void updateFacultyField(Connection con, Scanner sc, int facultyId, String field) throws SQLException {
+        String query = "UPDATE Faculty SET " + field + " = ? WHERE faculty_id = ?";
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            String input;
+
+            switch (field) {
+                case "name":
+                    System.out.print("Enter updated name: ");
+                    input = sc.nextLine().trim();
+                    if (!input.matches("^[A-Za-z ]+$")) {
+                        System.out.println("❌ Name must contain only letters and spaces.");
+                        return;
+                    }
+                    break;
+
+                case "email":
+                    System.out.print("Enter updated email: ");
+                    input = sc.nextLine().trim();
+                    if (!EMAIL_PATTERN.matcher(input).matches()) {
+                        System.out.println("❌ Invalid email format.");
+                        return;
+                    }
+                    break;
+
+                case "phone":
+                    System.out.print("Enter updated phone (10 digits): ");
+                    input = sc.nextLine().trim();
+                    if (!PHONE_PATTERN.matcher(input).matches()) {
+                        System.out.println("❌ Invalid phone number.");
+                        return;
+                    }
+                    break;
+
+                case "department":
+                    System.out.print("Enter updated department: ");
+                    input = sc.nextLine().trim();
+                    if (input.isEmpty()) {
+                        System.out.println("❌ Department cannot be empty.");
+                        return;
+                    }
+                    break;
+
+                case "designation":
+                    System.out.print("Enter updated designation: ");
+                    input = sc.nextLine().trim();
+                    if (input.isEmpty()) {
+                        System.out.println("❌ Designation cannot be empty.");
+                        return;
+                    }
+                    break;
+
+                default:
+                    System.out.println("❌ Unknown field.");
+                    return;
+            }
+
+            stmt.setString(1, input);
+            stmt.setInt(2, facultyId);
+
+            int rows = stmt.executeUpdate();
+            System.out.println("✅ " + field + " updated successfully. Rows affected: " + rows);
+        }
+    }
+    private void updateAllFacultyDetails(Connection con, Scanner sc, int facultyId) throws SQLException {
+        System.out.println("*** Write 'NA' to cancel anytime ***");
+
+        // Name
+        String name;
+        while (true) {
+            System.out.print("Enter updated name: ");
+            name = sc.nextLine().trim();
+            if (name.equalsIgnoreCase("NA")) return;
+            if (!name.matches("^[A-Za-z ]+$")) {
+                System.out.println("❌ Name must contain only letters and spaces.");
+            } else break;
+        }
+
+        // Email
+        String email;
+        while (true) {
+            System.out.print("Enter updated email: ");
+            email = sc.nextLine().trim();
+            if (email.equalsIgnoreCase("NA")) return;
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                System.out.println("❌ Invalid email format.");
+            } else break;
+        }
+
+        // Phone
+        String phone;
+        while (true) {
+            System.out.print("Enter updated phone (10 digits): ");
+            phone = sc.nextLine().trim();
+            if (phone.equalsIgnoreCase("NA")) return;
+            if (!PHONE_PATTERN.matcher(phone).matches()) {
+                System.out.println("❌ Invalid phone number.");
+            } else break;
+        }
+
+        // Department
+        String department;
+        while (true) {
+            System.out.print("Enter updated department: ");
+            department = sc.nextLine().trim();
+            if (department.equalsIgnoreCase("NA")) return;
+            if (department.isEmpty()) {
+                System.out.println("❌ Department cannot be empty.");
+            } else break;
+        }
+
+        // Designation
+        String designation;
+        while (true) {
+            System.out.print("Enter updated designation: ");
+            designation = sc.nextLine().trim();
+            if (designation.equalsIgnoreCase("NA")) return;
+            if (designation.isEmpty()) {
+                System.out.println("❌ Designation cannot be empty.");
+            } else break;
+        }
+
+        String query = "UPDATE Faculty SET name = ?, email = ?, phone = ?, department = ?, designation = ? WHERE faculty_id = ?";
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.setString(3, phone);
+            stmt.setString(4, department);
+            stmt.setString(5, designation);
+            stmt.setInt(6, facultyId);
+
+            int rows = stmt.executeUpdate();
+            System.out.println("✅ Faculty details updated successfully. Rows affected: " + rows);
+        }
+    }
+
+
+
 
 
     public void viewStudentCountByYear(Connection con, int facultyId) {
@@ -280,7 +389,7 @@ public class Teacher
 
             boolean exit = false;
             while (!exit) {
-                System.out.println("\n👨‍🏫 Faculty Menu:");
+                System.out.println("\n Faculty Menu:");
                 System.out.println("1. View all courses you are teaching");
                 System.out.println("2. View all unique students you're teaching");
                 System.out.println("3. View your timetable");
@@ -302,11 +411,7 @@ public class Teacher
                     case 1 -> viewCoursesTeaching(con, facultyIdFromPOJO);
                     case 2 -> viewUniqueStudentsTaught(con, facultyIdFromPOJO);
                     case 3 -> viewTimetable(con, facultyIdFromPOJO);
-                    case 4 -> {
-                        editFacultyDetails(con, sc, facultyIdFromPOJO);
-                        teacherPOJO.setEmail(teacherPOJO.getEmail());
-                        teacherPOJO.setDesignation(teacherPOJO.getDesignation());
-                    }
+                    case 4 -> editFacultyDetailsMenu(con, sc, facultyId);
                     case 5 -> viewStudentCountByYear(con, facultyIdFromPOJO);
                     case 6 -> exit = true;
                     default -> System.out.println("❌ Invalid option! Try again.");

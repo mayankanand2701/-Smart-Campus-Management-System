@@ -2,7 +2,9 @@ package campus;
 import validator.InputValidator;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,11 +14,12 @@ import java.util.Set;
 
 import exception.FacultyNotFoundException;
 
-public class Management {
-
-    public void manageAll(Connection con, Scanner sc) {
+public class Management
+{
+    public void manageAll(Connection con, Scanner sc)
+    {
         while (true) {
-            System.out.println("\n🛠️ Management Portal:");
+            System.out.println("\n Management Portal:");
             System.out.println("1. Manage Courses");
             System.out.println("2. Manage Faculty");
             System.out.println("3. Manage Students");
@@ -24,7 +27,8 @@ public class Management {
             System.out.print("Choose an option: ");
             int choice = sc.nextInt();
             sc.nextLine();
-            switch (choice) {
+            switch (choice)
+            {
                 case 1:
                     manageCourses(con, sc);
                     break;
@@ -43,82 +47,96 @@ public class Management {
         }
     }
 
-    // Course Done
-    public void manageCourses(Connection con, Scanner sc) {
-        while (true) {
+    public void manageCourses(Connection con, Scanner sc)
+    {
+        while (true)
+        {
             System.out.println("\n📚 Course Management:");
             System.out.println("1. Add Course");
             System.out.println("2. View Courses");
             System.out.println("3. Update Course");
             System.out.println("4. Delete Course");
-            System.out.println("5. Back");
+            System.out.println("5. Simulate Concurrent Enrollments");
+            System.out.println("6. Back");
             int ch = InputValidator.getInt("Enter your choice: ");
 
-            try {
-                switch (ch) {
+            try 
+            {
+                switch (ch) 
+                {
                 case 1:
-                	try {
-                	    String cname = InputValidator.getName(); // Course name
+                	try 
+                	{
+                	    String cname = InputValidator.getName();
                 	    int credits = InputValidator.getInt("Credits: ");
                 	    String dept = InputValidator.getDepartment();
                 	    int semester = InputValidator.getInt("Semester: ");
 
                 	    int facultyId;
 
-                	    while (true) {
-                	        // 📌 Display available faculties for the selected department
-                	        System.out.println("\n📚 Available Faculties for Department: " + dept);
+                	    while (true) 
+                	    {
+                	        System.out.println("\n Available Faculties for Department: " + dept);
                 	        System.out.println("--------------------------------------------------");
                 	        System.out.println("Faculty ID | Faculty Name");
                 	        System.out.println("--------------------------------------------------");
 
                 	        String fetchFacultiesQuery = "SELECT faculty_id, name FROM Faculty WHERE department = ?";
-                	        try (PreparedStatement fetchStmt = con.prepareStatement(fetchFacultiesQuery)) {
+                	        try (PreparedStatement fetchStmt = con.prepareStatement(fetchFacultiesQuery))
+                	        {
                 	            fetchStmt.setString(1, dept);
                 	            ResultSet rs = fetchStmt.executeQuery();
 
                 	            boolean facultyAvailable = false;
-                	            while (rs.next()) {
+                	            while (rs.next())
+                	            {
                 	                facultyAvailable = true;
                 	                System.out.printf("%-11d | %s\n", rs.getInt("faculty_id"), rs.getString("name"));
                 	            }
 
-                	            if (!facultyAvailable) {
-                	                System.out.println("❌ No faculty available for this department.");
-                	                return; // Exit as no faculty available for selected department
+                	            if (!facultyAvailable) 
+                	            {
+                	                System.out.println("No faculty available for this department.");
+                	                return; 
                 	            }
                 	        }
 
                 	        System.out.println("--------------------------------------------------");
 
-                	        // 📌 Ask for Faculty ID to assign
                 	        facultyId = InputValidator.getInt("Choose a Faculty ID to assign to the course: ");
 
                 	        String checkFacultyQuery = "SELECT * FROM Faculty WHERE faculty_id = ? AND department = ?";
-                	        try (PreparedStatement checkFacultyStmt = con.prepareStatement(checkFacultyQuery)) {
+                	        try (PreparedStatement checkFacultyStmt = con.prepareStatement(checkFacultyQuery)) 
+                	        {
                 	            checkFacultyStmt.setInt(1, facultyId);
                 	            checkFacultyStmt.setString(2, dept);
                 	            ResultSet rs = checkFacultyStmt.executeQuery();
 
-                	            if (rs.next()) {
-                	                // Faculty found in that department — break the loop
+                	            if (rs.next())
+                	            {
                 	                break;
-                	            } else {
-                	                throw new FacultyNotFoundException("❌ Faculty ID not found in the selected department. Please enter a valid Faculty ID.");
                 	            }
-
-                	        } catch (FacultyNotFoundException e) {
+                	            else 
+                	            {
+                	                throw new FacultyNotFoundException(" Faculty ID not found in the selected department. Please enter a valid Faculty ID.");
+                	            }
+                	        }
+                	        catch (FacultyNotFoundException e)
+                	        {
                 	            System.out.println(e.getMessage());
-                	        } catch (SQLException e) {
+                	        }
+                	        catch (SQLException e)
+                	        {
                 	            e.printStackTrace();
-                	            return; // Stop if SQL error occurs
+                	            return; 
                 	        }
                 	    }
 
-                	    // 📌 Now safe to insert course
+                	 
                 	    try (PreparedStatement ps = con.prepareStatement(
                 	            "INSERT INTO Course (course_name, credits, department, semester, faculty_id) VALUES (?, ?, ?, ?, ?)"
-                	    )) {
+                	    ))
+                	    {
                 	        ps.setString(1, cname);
                 	        ps.setInt(2, credits);
                 	        ps.setString(3, dept);
@@ -126,16 +144,18 @@ public class Management {
                 	        ps.setInt(5, facultyId);
                 	        ps.executeUpdate();
 
-                	        System.out.println("✅ Course added successfully!");
-                	    } catch (SQLException e) {
+                	        System.out.println(" Course added successfully!");
+                	    } 
+                	    catch (SQLException e)
+                	    {
                 	        e.printStackTrace();
                 	    }
 
-                	} catch (Exception e) {
+                	} 
+                	catch (Exception e) 
+                	{
                 	    e.printStackTrace();
                 	}
-
-
                     break;
 
                     case 2:
@@ -151,22 +171,23 @@ public class Management {
                         break;
 
                     case 3:
-                        System.out.println("\n✏️ Update Course Details");
+                        System.out.println("\n Update Course Details");
 
                         int cid = InputValidator.getInt("Course ID to update: ");
 
-                        // Check if course exists
                         PreparedStatement check = con.prepareStatement("SELECT * FROM Course WHERE course_id = ?");
                         check.setInt(1, cid);
                         ResultSet rsCourse = check.executeQuery();
 
-                        if (!rsCourse.next()) {
-                            System.out.println("❌ No course found with that ID.");
+                        if (!rsCourse.next())
+                        {
+                            System.out.println(" No course found with that ID.");
                             break;
                         }
 
-                        while (true) {
-                            System.out.println("\n🔧 Choose field to update:");
+                        while (true)
+                        {
+                            System.out.println("\n Choose field to update:");
                             System.out.println("1. Course Name");
                             System.out.println("2. Credits");
                             System.out.println("3. Department");
@@ -177,7 +198,8 @@ public class Management {
                             String query = "";
                             PreparedStatement ps1 = null;
 
-                            switch (choice) {
+                            switch (choice)
+                            {
                                 case 1:
                                     query = "UPDATE Course SET course_name=? WHERE course_id=?";
                                     ps1 = con.prepareStatement(query);
@@ -199,20 +221,19 @@ public class Management {
                                     ps1.setInt(1, InputValidator.getSemester("New Semester (1–8): "));
                                     break;
                                 case 5:
-                                    System.out.println("✅ Finished updating course.");
+                                    System.out.println(" Finished updating course.");
                                     return;
                                 default:
-                                    System.out.println("❌ Invalid choice. Try again.");
+                                    System.out.println(" Invalid choice. Try again.");
                                     continue;
                             }
 
-                            // Common step: Set course_id in all prepared statements
                             ps1.setInt(2, cid);
                             int updated = ps1.executeUpdate();
                             if (updated > 0)
-                                System.out.println("✅ Field updated successfully!");
+                                System.out.println(" Field updated successfully!");
                             else
-                                System.out.println("❌ Update failed. Please try again.");
+                                System.out.println(" Update failed. Please try again.");
                         }
 
 
@@ -221,27 +242,33 @@ public class Management {
                         PreparedStatement delete = con.prepareStatement("DELETE FROM Course WHERE course_id=?");
                         delete.setInt(1, delId);
                         delete.executeUpdate();
-                        System.out.println("🗑️ Course deleted successfully.");
+                        System.out.println(" Course deleted successfully.");
                         break;
 
                     case 5:
-                        System.out.println("🔙 Returning to main menu...");
+                    	simulateEnrollmentConcurrency(con);
+                        break;
+
+                    case 6:
+                        System.out.println(" Returning to main menu...");
                         return;
 
                     default:
-                        System.out.println("❌ Invalid choice. Try again.");
+                        System.out.println(" Invalid choice. Try again.");
                 }
 
-            } catch (SQLException e) {
-                System.out.println("❌ SQL Error: " + e.getMessage());
+            } catch (SQLException e)
+            {
+                System.out.println(" SQL Error: " + e.getMessage());
             }
         }
     }
 
-    // 
-    private void manageFaculty(Connection con, Scanner sc) {
-        while (true) {
-            System.out.println("\n👨‍🏫 Faculty Management:");
+    private void manageFaculty(Connection con, Scanner sc)
+    {
+        while (true)
+        {
+            System.out.println("\n Faculty Management:");
             System.out.println("1. Add Faculty");
             System.out.println("2. View Faculty");
             System.out.println("3. Update Faculty");
@@ -250,8 +277,10 @@ public class Management {
             System.out.println("6. Back");
             int ch = InputValidator.getInt("Enter your choice: ");
 
-            try {
-                switch (ch) {
+            try 
+            {
+                switch (ch) 
+                {
                     case 1:
                         System.out.println("\n➕ Add New Faculty");
                         String name = InputValidator.getName();
@@ -285,7 +314,7 @@ public class Management {
                         break;
 
                     case 3:
-                        System.out.println("\n✏️ Update Faculty Email");
+                        System.out.println("\n Update Faculty Email");
                         int fid = InputValidator.getInt("Faculty ID to Update: ");
                         String newEmail = InputValidator.getEmail();
 
@@ -297,37 +326,38 @@ public class Management {
                         int updatedRows = update.executeUpdate();
 
                         if (updatedRows > 0)
-                            System.out.println("✅ Faculty Updated!");
+                            System.out.println(" Faculty Updated!");
                         else
-                            System.out.println("❌ No faculty found with the given ID.");
+                            System.out.println(" No faculty found with the given ID.");
                         break;
 
                     case 4:
-                        System.out.println("\n🗑️ Delete Faculty");
+                        System.out.println("\n Delete Faculty");
                         int delId = InputValidator.getInt("Faculty ID to Delete: ");
                         PreparedStatement del = con.prepareStatement("DELETE FROM faculty WHERE faculty_id=?");
                         del.setInt(1, delId);
                         int deleted = del.executeUpdate();
 
                         if (deleted > 0)
-                            System.out.println("🗑️ Faculty Deleted!");
+                            System.out.println(" Faculty Deleted!");
                         else
-                            System.out.println("❌ No faculty found with the given ID.");
+                            System.out.println(" No faculty found with the given ID.");
                         break;
                         
                         
-                    // I HAVE ADDED A NEW CASE - THIS IS FOR TIMETABLE     
                     case 5:
-                        System.out.println("\n📅 Faculty Timetable:");
-                        displayWeeklyTimetableFormatted(con); // Show timetable
+                        System.out.println("\n Faculty Timetable:");
+                        displayWeeklyTimetableFormatted(con); 
 
-                        while (true) {
+                        while (true)
+                        {
                             System.out.print("\nDo you want to add a new schedule? (yes/no): ");
                             String response = sc.nextLine().trim().toLowerCase();
 
                             if (response.equals("no")) break;
-                            if (!response.equals("yes")) {
-                                System.out.println("⚠️ Please enter 'yes' or 'no'.");
+                            if (!response.equals("yes")) 
+                            {
+                                System.out.println(" Please enter 'yes' or 'no'.");
                                 continue;
                             }
 
@@ -335,32 +365,36 @@ public class Management {
                             String facultyDept = "";
                             String facultyName = "";
 
-                            // 🔁 Ask for valid Faculty ID
-                            while (true) {
+                            while (true) 
+                            {
                                 System.out.print("Enter Faculty ID: ");
-                                try {
+                                try 
+                                {
                                     facultyId = Integer.parseInt(sc.nextLine());
 
                                     String getFaculty = "SELECT department, name FROM faculty WHERE faculty_id = ?";
-                                    try (PreparedStatement checkFaculty = con.prepareStatement(getFaculty)) {
+                                    try (PreparedStatement checkFaculty = con.prepareStatement(getFaculty))
+                                    {
                                         checkFaculty.setInt(1, facultyId);
                                         ResultSet facultyResult = checkFaculty.executeQuery();
 
-                                        if (facultyResult.next()) {
+                                        if (facultyResult.next())
+                                        {
                                             facultyDept = facultyResult.getString("department");
                                             facultyName = facultyResult.getString("name");
-                                            System.out.println("✅ Faculty Found: " + facultyName + " (" + facultyDept + ")");
+                                            System.out.println(" Faculty Found: " + facultyName + " (" + facultyDept + ")");
                                             break;
-                                        } else {
-                                            System.out.println("❌ Invalid Faculty ID. Try again.");
+                                        } 
+                                        else {
+                                            System.out.println(" Invalid Faculty ID. Try again.");
                                         }
                                     }
-                                } catch (NumberFormatException e) {
-                                    System.out.println("⚠️ Please enter a valid number.");
+                                } 
+                                catch (NumberFormatException e) {
+                                    System.out.println(" Please enter a valid number.");
                                 }
                             }
 
-                            // 📚 Show and validate course selection from same department
                             int courseId;
                             Set<Integer> validCourses = new HashSet<>();
 
@@ -369,29 +403,33 @@ public class Management {
                                 courseStmt.setString(1, facultyDept);
                                 ResultSet courseResult = courseStmt.executeQuery();
 
-                                System.out.println("\n📚 Available Courses in " + facultyDept + ":");
-                                while (courseResult.next()) {
+                                System.out.println("\n Available Courses in " + facultyDept + ":");
+                                while (courseResult.next()) 
+                                {
                                     int cid = courseResult.getInt("course_id");
                                     validCourses.add(cid);
                                     System.out.println("Course ID: " + cid + " - " + courseResult.getString("course_name"));
                                 }
                             }
 
-                            while (true) {
+                            while (true) 
+                            {
                                 System.out.print("Enter Course ID to schedule: ");
-                                try {
+                                try
+                                {
                                     courseId = Integer.parseInt(sc.nextLine());
                                     if (validCourses.contains(courseId)) {
                                         break;
-                                    } else {
-                                        System.out.println("❌ Invalid Course ID for this department. Try again.");
+                                    } 
+                                    else {
+                                        System.out.println(" Invalid Course ID for this department. Try again.");
                                     }
-                                } catch (NumberFormatException e) {
-                                    System.out.println("⚠️ Please enter a valid number.");
+                                }
+                                catch (NumberFormatException e) {
+                                    System.out.println(" Please enter a valid number.");
                                 }
                             }
 
-                            // 🕒 Time Slots
                             String[] timeSlots = {
                                 "09:00:00 - 10:00:00",
                                 "10:00:00 - 11:00:00",
@@ -403,32 +441,34 @@ public class Management {
                                 "16:00:00 - 17:00:00"
                             };
 
-                         // ✅ Validate Day Input
                             String day = "";
                             List<String> validDays = Arrays.asList("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
 
-                            while (true) {
+                            while (true)
+                            {
                                 System.out.print("Enter Day (e.g., Monday): ");
                                 day = sc.nextLine().trim();
                                 String formattedDay = day.substring(0, 1).toUpperCase() + day.substring(1).toLowerCase();
-                                if (validDays.contains(formattedDay)) {
+                                if (validDays.contains(formattedDay))
+                                {
                                     day = formattedDay;
                                     break;
-                                } else {
-                                    System.out.println("❌ Invalid day. Please enter a valid weekday (Monday to Friday).");
+                                } 
+                                else {
+                                    System.out.println(" Invalid day. Please enter a valid weekday (Monday to Friday).");
                                 }
                             }
 
 
-                            System.out.println("\n🕒 Available Time Slots:");
-                            for (int i = 0; i < timeSlots.length; i++) {
-                                System.out.println((i + 1) + ". " + timeSlots[i]);
-                            }
+                            System.out.println("\n Available Time Slots:");
+                            for (int i = 0; i < timeSlots.length; i++) System.out.println((i + 1) + ". " + timeSlots[i]);
+                            
 
                             System.out.print("Select time slot number (1–8): ");
                             int slotIndex = Integer.parseInt(sc.nextLine()) - 1;
-                            if (slotIndex < 0 || slotIndex >= timeSlots.length) {
-                                System.out.println("❌ Invalid time slot selection.");
+                            if (slotIndex < 0 || slotIndex >= timeSlots.length) 
+                            {
+                                System.out.println(" Invalid time slot selection.");
                                 break;
                             }
 
@@ -436,7 +476,6 @@ public class Management {
                             String startTime = slotParts[0];
                             String endTime = slotParts[1];
 
-                            // Check for slot conflict
                             String checkSlot = "SELECT * FROM Timetable WHERE day_of_week = ? AND start_time = ? AND end_time = ?";
                             try (PreparedStatement slotStmt = con.prepareStatement(checkSlot)) {
                                 slotStmt.setString(1, day);
@@ -444,13 +483,13 @@ public class Management {
                                 slotStmt.setString(3, endTime);
                                 ResultSet slotResult = slotStmt.executeQuery();
 
-                                if (slotResult.next()) {
+                                if (slotResult.next())
+                                {
                                     System.out.println("❌ This slot is already occupied. Please try another.");
                                     continue;
                                 }
                             }
 
-                            // Room number
                   
                             System.out.print("Enter Room Number (e.g., CSE101): ");
                             String roomNo = sc.nextLine().trim();
@@ -460,7 +499,8 @@ public class Management {
                                                     "JOIN faculty f ON t.faculty_id = f.faculty_id " +
                                                     "WHERE t.room_no = ? AND t.day_of_week = ? " +
                                                     "AND NOT (t.end_time <= ? OR t.start_time >= ?)";
-                            try (PreparedStatement roomStmt = con.prepareStatement(roomCheckQuery)) {
+                            try (PreparedStatement roomStmt = con.prepareStatement(roomCheckQuery)) 
+                            {
                                 roomStmt.setString(1, roomNo);
                                 roomStmt.setString(2, day);
                                 roomStmt.setTime(3, Time.valueOf(startTime));
@@ -478,9 +518,10 @@ public class Management {
 
 
 
-                            // ✅ Insert Schedule
+                            // Insert Schedule
                             String insertTimetable = "INSERT INTO Timetable (course_id, faculty_id, day_of_week, start_time, end_time, room_no) VALUES (?, ?, ?, ?, ?, ?)";
-                            try (PreparedStatement insertStmt = con.prepareStatement(insertTimetable)) {
+                            try (PreparedStatement insertStmt = con.prepareStatement(insertTimetable))
+                            {
                                 insertStmt.setInt(1, courseId);
                                 insertStmt.setInt(2, facultyId);
                                 insertStmt.setString(3, day);
@@ -493,7 +534,8 @@ public class Management {
                                     System.out.println("✅ Schedule added successfully!");
                                     System.out.println("\n📋 Updated Schedule for " + facultyName + ":");
                                     printFacultySchedule(con, facultyId);
-                                } else {
+                                } 
+                                else {
                                     System.out.println("❌ Failed to insert schedule.");
                                 }
                             }
@@ -509,17 +551,18 @@ public class Management {
                         System.out.println("❌ Invalid choice. Please try again.");
                 }
 
-            } catch (SQLException e) {
+            } 
+            catch (SQLException e) {
                 System.out.println("❌ SQL Error: " + e.getMessage());
             }
         }
     }
-
-
-    //BELOW ARE THE 2 FUNCTIONS FOR PRINTING THE TIMETABLE FOR FACULTY 
-    private void printFacultySchedule(Connection con, int facultyId) throws SQLException {
+    
+    private void printFacultySchedule(Connection con, int facultyId) throws SQLException
+    {
         String query = "SELECT day_of_week, start_time, end_time, course_id, room_no FROM Timetable WHERE faculty_id = ? ORDER BY FIELD(day_of_week, 'Monday','Tuesday','Wednesday','Thursday','Friday'), start_time";
-        try (PreparedStatement stmt = con.prepareStatement(query)) {
+        try (PreparedStatement stmt = con.prepareStatement(query)) 
+        {
             stmt.setInt(1, facultyId);
             ResultSet rs = stmt.executeQuery();
             System.out.printf("%-10s | %-10s - %-10s | %-10s | %-8s%n", "Day", "Start", "End", "Course ID", "Room");
@@ -535,7 +578,8 @@ public class Management {
         }
     }
 
-    private void displayWeeklyTimetableFormatted(Connection con) throws SQLException {
+    private void displayWeeklyTimetableFormatted(Connection con) throws SQLException
+    {
     	String[] timeSlots = {
     		    "09:00 – 10:00",
     		    "10:00 – 11:00",
@@ -548,11 +592,11 @@ public class Management {
     		};
         String[] days = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" };
 
-        // Create a nested map to store timetable data
         Map<String, Map<String, String>> timetable = new LinkedHashMap<>();
         for (String slot : timeSlots) {
             Map<String, String> dayMap = new LinkedHashMap<>();
-            for (String day : days) {
+            for (String day : days) 
+            {
                 dayMap.put(day, "-");
             }
             timetable.put(slot, dayMap);
@@ -577,8 +621,7 @@ public class Management {
             }
         }
 
-        // 🖨️ Print Header
-        System.out.println("\n📅 Smart Campus Weekly Timetable");
+        System.out.println("\n Smart Campus Weekly Timetable");
         System.out.printf("%-17s", "Time Slot");
         for (String day : days) {
             System.out.printf("| %-27s", day);
@@ -586,17 +629,17 @@ public class Management {
         System.out.println();
         System.out.println("=".repeat(170));
 
-        // 🖨️ Print timetable row by row
-        for (String time : timeSlots) {
+        for (String time : timeSlots) 
+        {
             System.out.printf("%-17s", time);
             for (String day : days) {
                 String val = timetable.get(time).get(day);
                 String[] lines = val.split("\n");
 
                 if (lines.length == 3) {
-                    // Pad each line to fit 3-line cell
                     System.out.printf("| %-27s", lines[0]);
-                } else {
+                } 
+                else {
                     System.out.printf("| %-27s", "-");
                 }
             }
@@ -610,7 +653,8 @@ public class Management {
 
                 if (lines.length == 3) {
                     System.out.printf("| %-27s", lines[1]);
-                } else {
+                } 
+                else {
                     System.out.printf("| %-27s", "");
                 }
             }
@@ -785,6 +829,136 @@ public class Management {
             } catch (SQLException e) {
                 System.out.println("❌ SQL Error: " + e.getMessage());
             }
+        }
+    }
+    private void simulateEnrollmentConcurrency(Connection con) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter the department (CSE, ECE, AGRI): ");
+        String dept = sc.nextLine().trim().toUpperCase();
+
+        List<String> enrolledStudents = new ArrayList<>();
+        final int[] failedCount = {0};
+        final Object lock = new Object();
+        int maxSeats = 6;  // Example seat limit
+
+        try {
+            // 🔍 Fetch students from DB
+            PreparedStatement ps = con.prepareStatement("SELECT name FROM student WHERE department = ?");
+            ps.setString(1, dept);
+            ResultSet rs = ps.executeQuery();
+
+            List<String> studentNames = new ArrayList<>();
+            while (rs.next()) {
+                studentNames.add(rs.getString("name"));
+            }
+
+            if (studentNames.isEmpty()) {
+                System.out.println("❌ No students found for department " + dept);
+                return;
+            }
+
+            System.out.println("🎓 Found " + studentNames.size() + " students from " + dept + " department.");
+            System.out.println("💺 Available Seats: " + maxSeats);
+            System.out.println("⚙️ Simulating enrollment...");
+
+            final int[] availableSeats = {maxSeats};
+
+            class EnrollmentTask implements Runnable {
+                private String studentName;
+
+                EnrollmentTask(String studentName) {
+                    this.studentName = studentName;
+                }
+
+                @Override
+                public void run() {
+                    synchronized (lock) {
+                        if (availableSeats[0] > 0) {
+                            availableSeats[0]--;
+                            enrolledStudents.add(studentName);
+                            System.out.println("✅ " + studentName + " enrolled. Seats left: " + availableSeats[0]);
+                        } else {
+                            failedCount[0]++;
+                            System.out.println("❌ " + studentName + " could not enroll. No seats left.");
+                        }
+                    }
+                }
+            }
+
+            // 💻 Run threads
+            Thread[] threads = new Thread[studentNames.size()];
+            for (int i = 0; i < studentNames.size(); i++) {
+                threads[i] = new Thread(new EnrollmentTask(studentNames.get(i)));
+            }
+            for (Thread t : threads) t.start();
+            for (Thread t : threads) t.join();
+
+            // 📊 Summary
+            System.out.println("\n📊 Department Enrollment Summary for " + dept);
+            System.out.println("Total Students Attempted: " + studentNames.size());
+            System.out.println("Successfully Enrolled: " + enrolledStudents.size());
+            System.out.println("Not Enrolled: " + failedCount[0]);
+
+            // 🧾 Course-wise simulation for enrolled students
+            simulateCourseEnrollment(con, dept, enrolledStudents);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void simulateCourseEnrollment(Connection con, String dept, List<String> enrolledStudents) throws SQLException, InterruptedException {
+        PreparedStatement ps = con.prepareStatement("SELECT course_id, course_name FROM course WHERE department = ?");
+        ps.setString(1, dept);
+        ResultSet rs = ps.executeQuery();
+
+        Map<String, List<String>> studentToCourses = new HashMap<>();
+        Map<String, List<String>> courseToStudents = new HashMap<>();
+
+        while (rs.next()) {
+            int courseId = rs.getInt("course_id");
+            String courseName = rs.getString("course_name");
+            final int[] courseSeats = {3}; // Customize per course
+            final Object lock = new Object();
+            final int[] courseFailed = {0};
+
+            System.out.println("\n📘 Course: " + courseName + " | Available Seats: " + courseSeats[0]);
+
+            Thread[] threads = new Thread[enrolledStudents.size()];
+            for (int i = 0; i < enrolledStudents.size(); i++) {
+                final String student = enrolledStudents.get(i);
+                threads[i] = new Thread(() -> {
+                    synchronized (lock) {
+                        if (courseSeats[0] > 0) {
+                            courseSeats[0]--;
+                            courseToStudents.computeIfAbsent(courseName, k -> new ArrayList<>()).add(student);
+                            studentToCourses.computeIfAbsent(student, k -> new ArrayList<>()).add(courseName);
+                            System.out.println("✅ " + student + " got into " + courseName);
+                        } else {
+                            courseFailed[0]++;
+                            System.out.println("❌ " + student + " could not get into " + courseName);
+                        }
+                    }
+                });
+            }
+
+            for (Thread t : threads) t.start();
+            for (Thread t : threads) t.join();
+
+            System.out.println("📊 Summary for " + courseName + ":");
+            System.out.println("Enrolled: " + (enrolledStudents.size() - courseFailed[0]));
+            System.out.println("Not Enrolled: " + courseFailed[0]);
+        }
+
+        System.out.println("\n📌 Final Course Enrollment Map:");
+        for (var entry : courseToStudents.entrySet()) {
+            System.out.println("🧑 Course: " + entry.getKey() + " -> " + entry.getValue().size() + " students");
+        }
+
+        System.out.println("\n👨‍🎓 Student Course Map:");
+        for (var entry : studentToCourses.entrySet()) {
+            System.out.println("✅ " + entry.getKey() + " -> " + String.join(", ", entry.getValue()));
         }
     }
 }
